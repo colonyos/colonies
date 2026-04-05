@@ -25,6 +25,9 @@ func copyFunction(f *core.Function) *core.Function {
 }
 
 func (db *EmbeddedDatabase) AddFunction(function *core.Function) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	if _, ok := db.functions.Get(function.FunctionID); ok {
 		return errors.New("Function with ID <" + function.FunctionID + "> already exists")
 	}
@@ -84,6 +87,9 @@ func (db *EmbeddedDatabase) GetFunctionsByExecutorAndName(colonyName string, exe
 }
 
 func (db *EmbeddedDatabase) UpdateFunctionStats(colonyName string, executorName string, name string, counter int, minWaitTime float64, maxWaitTime float64, minExecTime float64, maxExecTime float64, avgWaitTime float64, avgExecTime float64) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	ids := db.functionsIdx.byFullName.Lookup(colonyName + ":" + executorName + ":" + name)
 	if len(ids) == 0 {
 		return nil
@@ -106,6 +112,9 @@ func (db *EmbeddedDatabase) UpdateFunctionStats(colonyName string, executorName 
 }
 
 func (db *EmbeddedDatabase) ResetFunctionStatsByColonyName(colonyName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	ids := db.functionsIdx.byColony.Lookup(colonyName)
 	for _, id := range ids {
 		f, ok := db.functions.Get(id)
@@ -128,6 +137,12 @@ func (db *EmbeddedDatabase) ResetFunctionStatsByColonyName(colonyName string) er
 }
 
 func (db *EmbeddedDatabase) RemoveFunctionByID(functionID string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.removeFunctionByID(functionID)
+}
+
+func (db *EmbeddedDatabase) removeFunctionByID(functionID string) error {
 	f, ok := db.functions.Get(functionID)
 	if !ok {
 		return nil
@@ -141,9 +156,15 @@ func (db *EmbeddedDatabase) RemoveFunctionByID(functionID string) error {
 }
 
 func (db *EmbeddedDatabase) RemoveFunctionByName(colonyName string, executorName string, name string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.removeFunctionByName(colonyName, executorName, name)
+}
+
+func (db *EmbeddedDatabase) removeFunctionByName(colonyName string, executorName string, name string) error {
 	ids := db.functionsIdx.byFullName.Lookup(colonyName + ":" + executorName + ":" + name)
 	for _, id := range ids {
-		if err := db.RemoveFunctionByID(id); err != nil {
+		if err := db.removeFunctionByID(id); err != nil {
 			return err
 		}
 	}
@@ -151,9 +172,15 @@ func (db *EmbeddedDatabase) RemoveFunctionByName(colonyName string, executorName
 }
 
 func (db *EmbeddedDatabase) RemoveFunctionsByExecutorName(colonyName string, executorName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.removeFunctionsByExecutorName(colonyName, executorName)
+}
+
+func (db *EmbeddedDatabase) removeFunctionsByExecutorName(colonyName string, executorName string) error {
 	ids := db.functionsIdx.byExecutor.Lookup(colonyName + ":" + executorName)
 	for _, id := range ids {
-		if err := db.RemoveFunctionByID(id); err != nil {
+		if err := db.removeFunctionByID(id); err != nil {
 			return err
 		}
 	}
@@ -161,9 +188,15 @@ func (db *EmbeddedDatabase) RemoveFunctionsByExecutorName(colonyName string, exe
 }
 
 func (db *EmbeddedDatabase) RemoveFunctionsByColonyName(colonyName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.removeFunctionsByColonyName(colonyName)
+}
+
+func (db *EmbeddedDatabase) removeFunctionsByColonyName(colonyName string) error {
 	ids := db.functionsIdx.byColony.Lookup(colonyName)
 	for _, id := range ids {
-		if err := db.RemoveFunctionByID(id); err != nil {
+		if err := db.removeFunctionByID(id); err != nil {
 			return err
 		}
 	}
@@ -171,9 +204,12 @@ func (db *EmbeddedDatabase) RemoveFunctionsByColonyName(colonyName string) error
 }
 
 func (db *EmbeddedDatabase) RemoveFunctions() error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	all := db.functions.All()
 	for _, f := range all {
-		if err := db.RemoveFunctionByID(f.FunctionID); err != nil {
+		if err := db.removeFunctionByID(f.FunctionID); err != nil {
 			return err
 		}
 	}

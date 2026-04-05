@@ -12,17 +12,19 @@ func copyLocation(l *core.Location) *core.Location {
 }
 
 func (db *EmbeddedDatabase) AddLocation(location *core.Location) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	if location == nil {
 		return errors.New("Location is nil")
 	}
 
-	existing, err := db.GetLocationByName(location.ColonyName, location.Name)
-	if err != nil {
-		return err
-	}
-
-	if existing != nil {
-		return errors.New("Location with name <" + location.Name + "> already exists in Colony with name <" + location.ColonyName + ">")
+	// Direct index+store lookup to avoid calling the public GetLocationByName which would deadlock
+	ids := db.locationsIdx.byName.Lookup(location.ColonyName + ":" + location.Name)
+	if len(ids) > 0 {
+		if _, ok := db.locations.Get(ids[0]); ok {
+			return errors.New("Location with name <" + location.Name + "> already exists in Colony with name <" + location.ColonyName + ">")
+		}
 	}
 
 	cp := copyLocation(location)
@@ -68,6 +70,9 @@ func (db *EmbeddedDatabase) GetLocationByName(colonyName string, name string) (*
 }
 
 func (db *EmbeddedDatabase) RemoveLocationByID(locationID string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	l, ok := db.locations.Get(locationID)
 	if !ok {
 		return nil
@@ -79,6 +84,9 @@ func (db *EmbeddedDatabase) RemoveLocationByID(locationID string) error {
 }
 
 func (db *EmbeddedDatabase) RemoveLocationByName(colonyName string, name string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	ids := db.locationsIdx.byName.Lookup(colonyName + ":" + name)
 	if len(ids) == 0 {
 		return nil
@@ -97,6 +105,14 @@ func (db *EmbeddedDatabase) RemoveLocationByName(colonyName string, name string)
 }
 
 func (db *EmbeddedDatabase) RemoveLocationsByColonyName(colonyName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.removeLocationsByColonyName(colonyName)
+}
+
+// removeLocationsByColonyName is the internal unlocked version.
+// Called by RemoveColonyByName which already holds db.mu.
+func (db *EmbeddedDatabase) removeLocationsByColonyName(colonyName string) error {
 	ids := db.locationsIdx.byColony.Lookup(colonyName)
 	for _, id := range ids {
 		if l, ok := db.locations.Get(id); ok {

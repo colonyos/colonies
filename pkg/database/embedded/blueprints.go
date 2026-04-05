@@ -56,6 +56,9 @@ func copyBlueprintDefinition(sd *core.BlueprintDefinition) *core.BlueprintDefini
 }
 
 func (db *EmbeddedDatabase) AddBlueprintDefinition(sd *core.BlueprintDefinition) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	if sd == nil {
 		return errors.New("BlueprintDefinition is nil")
 	}
@@ -151,6 +154,9 @@ func (db *EmbeddedDatabase) GetBlueprintDefinitionByKind(kind string) (*core.Blu
 }
 
 func (db *EmbeddedDatabase) UpdateBlueprintDefinition(sd *core.BlueprintDefinition) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	if sd == nil {
 		return errors.New("BlueprintDefinition is nil")
 	}
@@ -175,6 +181,13 @@ func (db *EmbeddedDatabase) UpdateBlueprintDefinition(sd *core.BlueprintDefiniti
 }
 
 func (db *EmbeddedDatabase) RemoveBlueprintDefinitionByID(id string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	return db.removeBlueprintDefinitionByID(id)
+}
+
+func (db *EmbeddedDatabase) removeBlueprintDefinitionByID(id string) error {
 	sd, ok := db.blueprintDefs.Get(id)
 	if !ok {
 		return nil
@@ -188,9 +201,12 @@ func (db *EmbeddedDatabase) RemoveBlueprintDefinitionByID(id string) error {
 }
 
 func (db *EmbeddedDatabase) RemoveBlueprintDefinitionByName(namespace, name string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	ids := db.blueprintDefsIdx.byName.Lookup(namespace + ":" + name)
 	for _, id := range ids {
-		if err := db.RemoveBlueprintDefinitionByID(id); err != nil {
+		if err := db.removeBlueprintDefinitionByID(id); err != nil {
 			return err
 		}
 	}
@@ -250,6 +266,9 @@ func copyBlueprint(b *core.Blueprint) *core.Blueprint {
 }
 
 func (db *EmbeddedDatabase) AddBlueprint(blueprint *core.Blueprint) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	if blueprint == nil {
 		return errors.New("Blueprint is nil")
 	}
@@ -377,6 +396,9 @@ func (db *EmbeddedDatabase) GetBlueprintsByNamespaceKindAndLocation(namespace, k
 }
 
 func (db *EmbeddedDatabase) UpdateBlueprint(blueprint *core.Blueprint) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	if blueprint == nil {
 		return errors.New("Blueprint is nil")
 	}
@@ -401,6 +423,9 @@ func (db *EmbeddedDatabase) UpdateBlueprint(blueprint *core.Blueprint) error {
 }
 
 func (db *EmbeddedDatabase) UpdateBlueprintStatus(id string, status map[string]interface{}) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	b, ok := db.blueprints.Get(id)
 	if !ok {
 		return errors.New("Blueprint not found")
@@ -424,6 +449,13 @@ func (db *EmbeddedDatabase) UpdateBlueprintStatus(id string, status map[string]i
 }
 
 func (db *EmbeddedDatabase) RemoveBlueprintByID(id string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	return db.removeBlueprintByID(id)
+}
+
+func (db *EmbeddedDatabase) removeBlueprintByID(id string) error {
 	b, ok := db.blueprints.Get(id)
 	if !ok {
 		return nil
@@ -437,9 +469,12 @@ func (db *EmbeddedDatabase) RemoveBlueprintByID(id string) error {
 }
 
 func (db *EmbeddedDatabase) RemoveBlueprintByName(namespace, name string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	ids := db.blueprintsIdx.byName.Lookup(namespace + ":" + name)
 	for _, id := range ids {
-		if err := db.RemoveBlueprintByID(id); err != nil {
+		if err := db.removeBlueprintByID(id); err != nil {
 			return err
 		}
 	}
@@ -447,9 +482,12 @@ func (db *EmbeddedDatabase) RemoveBlueprintByName(namespace, name string) error 
 }
 
 func (db *EmbeddedDatabase) RemoveBlueprintsByNamespace(namespace string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	ids := db.blueprintsIdx.byNamespace.Lookup(namespace)
 	for _, id := range ids {
-		if err := db.RemoveBlueprintByID(id); err != nil {
+		if err := db.removeBlueprintByID(id); err != nil {
 			return err
 		}
 	}
@@ -474,6 +512,9 @@ func copyBlueprintHistory(h *core.BlueprintHistory) *core.BlueprintHistory {
 }
 
 func (db *EmbeddedDatabase) AddBlueprintHistory(history *core.BlueprintHistory) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	cp := copyBlueprintHistory(history)
 	if err := db.blueprintHistory.Put(cp.ID, cp); err != nil {
 		return err
@@ -518,6 +559,9 @@ func (db *EmbeddedDatabase) GetBlueprintHistoryByGeneration(blueprintID string, 
 }
 
 func (db *EmbeddedDatabase) RemoveBlueprintHistory(blueprintID string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	ids := db.blueprintHistoryIdx.byBlueprint.Lookup(blueprintID)
 	for _, id := range ids {
 		db.blueprintHistoryIdx.byBlueprint.Remove(id, blueprintID)

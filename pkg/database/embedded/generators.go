@@ -18,6 +18,9 @@ func copyGeneratorArg(a *core.GeneratorArg) *core.GeneratorArg {
 }
 
 func (db *EmbeddedDatabase) AddGenerator(generator *core.Generator) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	existingGenerator, err := db.GetGeneratorByName(generator.ColonyName, generator.Name)
 	if err != nil {
 		return err
@@ -39,6 +42,9 @@ func (db *EmbeddedDatabase) AddGenerator(generator *core.Generator) error {
 }
 
 func (db *EmbeddedDatabase) SetGeneratorLastRun(generatorID string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	g, ok := db.generators.Get(generatorID)
 	if !ok {
 		return nil
@@ -50,6 +56,9 @@ func (db *EmbeddedDatabase) SetGeneratorLastRun(generatorID string) error {
 }
 
 func (db *EmbeddedDatabase) SetGeneratorFirstPack(generatorID string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	g, ok := db.generators.Get(generatorID)
 	if !ok {
 		return nil
@@ -105,6 +114,9 @@ func (db *EmbeddedDatabase) FindAllGenerators() ([]*core.Generator, error) {
 }
 
 func (db *EmbeddedDatabase) RemoveGeneratorByID(generatorID string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	g, ok := db.generators.Get(generatorID)
 	if !ok {
 		return nil
@@ -117,10 +129,16 @@ func (db *EmbeddedDatabase) RemoveGeneratorByID(generatorID string) error {
 		return err
 	}
 
-	return db.RemoveAllGeneratorArgsByGeneratorID(generatorID)
+	return db.removeAllGeneratorArgsByGeneratorID(generatorID)
 }
 
 func (db *EmbeddedDatabase) RemoveAllGeneratorsByColonyName(colonyName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.removeAllGeneratorsByColonyName(colonyName)
+}
+
+func (db *EmbeddedDatabase) removeAllGeneratorsByColonyName(colonyName string) error {
 	ids := db.generatorsIdx.byColony.Lookup(colonyName)
 	for _, id := range ids {
 		if g, ok := db.generators.Get(id); ok {
@@ -132,10 +150,13 @@ func (db *EmbeddedDatabase) RemoveAllGeneratorsByColonyName(colonyName string) e
 		}
 	}
 
-	return db.RemoveAllGeneratorArgsByColonyName(colonyName)
+	return db.removeAllGeneratorArgsByColonyName(colonyName)
 }
 
 func (db *EmbeddedDatabase) AddGeneratorArg(generatorArg *core.GeneratorArg) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	cp := copyGeneratorArg(generatorArg)
 	if err := db.generatorArgs.Put(cp.ID, cp); err != nil {
 		return err
@@ -166,6 +187,9 @@ func (db *EmbeddedDatabase) CountGeneratorArgs(generatorID string) (int, error) 
 }
 
 func (db *EmbeddedDatabase) RemoveGeneratorArgByID(generatorArgsID string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	a, ok := db.generatorArgs.Get(generatorArgsID)
 	if !ok {
 		return nil
@@ -178,6 +202,12 @@ func (db *EmbeddedDatabase) RemoveGeneratorArgByID(generatorArgsID string) error
 }
 
 func (db *EmbeddedDatabase) RemoveAllGeneratorArgsByGeneratorID(generatorID string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.removeAllGeneratorArgsByGeneratorID(generatorID)
+}
+
+func (db *EmbeddedDatabase) removeAllGeneratorArgsByGeneratorID(generatorID string) error {
 	ids := db.generatorArgsIdx.byGenerator.Lookup(generatorID)
 	for _, id := range ids {
 		if a, ok := db.generatorArgs.Get(id); ok {
@@ -192,6 +222,12 @@ func (db *EmbeddedDatabase) RemoveAllGeneratorArgsByGeneratorID(generatorID stri
 }
 
 func (db *EmbeddedDatabase) RemoveAllGeneratorArgsByColonyName(colonyName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.removeAllGeneratorArgsByColonyName(colonyName)
+}
+
+func (db *EmbeddedDatabase) removeAllGeneratorArgsByColonyName(colonyName string) error {
 	ids := db.generatorArgsIdx.byColony.Lookup(colonyName)
 	for _, id := range ids {
 		if a, ok := db.generatorArgs.Get(id); ok {

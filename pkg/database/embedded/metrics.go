@@ -9,6 +9,9 @@ import (
 )
 
 func (db *EmbeddedDatabase) SetMetric(metric core.Metric) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	metric.GenerateID()
 	if err := db.metrics.Put(metric.ID, &metric); err != nil {
 		return err
@@ -95,6 +98,9 @@ func (db *EmbeddedDatabase) GetMetricHistory(colonyName string, executorName str
 }
 
 func (db *EmbeddedDatabase) IncrementMetric(colonyName string, executorName string, key string, period int, periodStart time.Time, delta float64) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	m := core.Metric{
 		ColonyName:   colonyName,
 		ExecutorName: executorName,
@@ -105,15 +111,10 @@ func (db *EmbeddedDatabase) IncrementMetric(colonyName string, executorName stri
 	}
 	m.GenerateID()
 
-	// Atomic read-modify-write using the store's own lock.
-	// This matches PostgreSQL's `UPDATE SET value = value + delta` semantics.
-	db.metrics.Lock()
-	defer db.metrics.Unlock()
-
-	existing, ok := db.metrics.GetUnlocked(m.ID)
+	existing, ok := db.metrics.Get(m.ID)
 	if !ok {
 		m.Value = delta
-		if err := db.metrics.PutUnlocked(m.ID, &m); err != nil {
+		if err := db.metrics.Put(m.ID, &m); err != nil {
 			return err
 		}
 		db.metricsIdx.byExecutor.Add(m.ID, colonyName+":"+executorName)
@@ -122,10 +123,13 @@ func (db *EmbeddedDatabase) IncrementMetric(colonyName string, executorName stri
 	}
 	cp := *existing
 	cp.Value += delta
-	return db.metrics.PutUnlocked(cp.ID, &cp)
+	return db.metrics.Put(cp.ID, &cp)
 }
 
 func (db *EmbeddedDatabase) RemoveMetric(colonyName string, executorName string, key string, period int, periodStart time.Time) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	m := core.Metric{
 		ColonyName:   colonyName,
 		ExecutorName: executorName,
@@ -144,6 +148,12 @@ func (db *EmbeddedDatabase) RemoveMetric(colonyName string, executorName string,
 }
 
 func (db *EmbeddedDatabase) RemoveAllMetricsByExecutorName(colonyName string, executorName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.removeAllMetricsByExecutorName(colonyName, executorName)
+}
+
+func (db *EmbeddedDatabase) removeAllMetricsByExecutorName(colonyName string, executorName string) error {
 	ids := db.metricsIdx.byExecutor.Lookup(colonyName + ":" + executorName)
 	for _, id := range ids {
 		if m, ok := db.metrics.Get(id); ok {
@@ -156,6 +166,12 @@ func (db *EmbeddedDatabase) RemoveAllMetricsByExecutorName(colonyName string, ex
 }
 
 func (db *EmbeddedDatabase) RemoveAllMetricsByColonyName(colonyName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.removeAllMetricsByColonyName(colonyName)
+}
+
+func (db *EmbeddedDatabase) removeAllMetricsByColonyName(colonyName string) error {
 	ids := db.metricsIdx.byColony.Lookup(colonyName)
 	for _, id := range ids {
 		if m, ok := db.metrics.Get(id); ok {
@@ -168,6 +184,9 @@ func (db *EmbeddedDatabase) RemoveAllMetricsByColonyName(colonyName string) erro
 }
 
 func (db *EmbeddedDatabase) RemoveAllMetrics() error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	for _, m := range db.metrics.All() {
 		db.metrics.Delete(m.ID)
 	}

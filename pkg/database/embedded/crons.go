@@ -13,6 +13,9 @@ func copyCron(c *core.Cron) *core.Cron {
 }
 
 func (db *EmbeddedDatabase) AddCron(cron *core.Cron) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	existing, err := db.GetCronByName(cron.ColonyName, cron.Name)
 	if err != nil {
 		return err
@@ -34,6 +37,9 @@ func (db *EmbeddedDatabase) AddCron(cron *core.Cron) error {
 }
 
 func (db *EmbeddedDatabase) UpdateCron(cronID string, nextRun time.Time, lastRun time.Time, lastProcessGraphID string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	c, ok := db.crons.Get(cronID)
 	if !ok {
 		return nil
@@ -91,6 +97,9 @@ func (db *EmbeddedDatabase) FindAllCrons() ([]*core.Cron, error) {
 }
 
 func (db *EmbeddedDatabase) RemoveCronByID(cronID string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	c, ok := db.crons.Get(cronID)
 	if !ok {
 		return nil
@@ -103,6 +112,12 @@ func (db *EmbeddedDatabase) RemoveCronByID(cronID string) error {
 }
 
 func (db *EmbeddedDatabase) RemoveAllCronsByColonyName(colonyName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.removeAllCronsByColonyName(colonyName)
+}
+
+func (db *EmbeddedDatabase) removeAllCronsByColonyName(colonyName string) error {
 	ids := db.cronsIdx.byColony.Lookup(colonyName)
 	for _, id := range ids {
 		if c, ok := db.crons.Get(id); ok {

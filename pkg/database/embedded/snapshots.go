@@ -18,6 +18,9 @@ func copySnapshot(s *core.Snapshot) *core.Snapshot {
 }
 
 func (db *EmbeddedDatabase) CreateSnapshot(colonyName string, label string, name string) (*core.Snapshot, error) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	existingSnapshot, _ := db.GetSnapshotByName(colonyName, name)
 	if existingSnapshot != nil {
 		return nil, errors.New("Snapshot with name <" + name + "> in Colony <" + colonyName + "> already exists")
@@ -94,6 +97,9 @@ func (db *EmbeddedDatabase) GetSnapshotsByColonyName(colonyName string) ([]*core
 }
 
 func (db *EmbeddedDatabase) RemoveSnapshotByID(colonyName string, snapshotID string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	s, ok := db.snapshots.Get(snapshotID)
 	if !ok {
 		return nil
@@ -121,6 +127,9 @@ func (db *EmbeddedDatabase) GetSnapshotByName(colonyName string, name string) (*
 }
 
 func (db *EmbeddedDatabase) RemoveSnapshotByName(colonyName string, name string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	ids := db.snapshotsIdx.byName.Lookup(colonyName + ":" + name)
 	for _, id := range ids {
 		if s, ok := db.snapshots.Get(id); ok {
@@ -137,6 +146,12 @@ func (db *EmbeddedDatabase) RemoveSnapshotByName(colonyName string, name string)
 }
 
 func (db *EmbeddedDatabase) RemoveSnapshotsByColonyName(colonyName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.removeSnapshotsByColonyName(colonyName)
+}
+
+func (db *EmbeddedDatabase) removeSnapshotsByColonyName(colonyName string) error {
 	ids := db.snapshotsIdx.byColony.Lookup(colonyName)
 	for _, id := range ids {
 		if s, ok := db.snapshots.Get(id); ok {

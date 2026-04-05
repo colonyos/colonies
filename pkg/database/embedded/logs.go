@@ -9,6 +9,9 @@ import (
 )
 
 func (db *EmbeddedDatabase) AddLog(processID string, colonyName string, executorName string, timestamp int64, msg string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	logID := core.GenerateRandomID()
 	logEntry := &core.Log{
 		ProcessID:    processID,
@@ -126,6 +129,12 @@ func (db *EmbeddedDatabase) GetLogsByExecutorLatest(executorName string, limit i
 }
 
 func (db *EmbeddedDatabase) RemoveLogsByColonyName(colonyName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.removeLogsByColonyName(colonyName)
+}
+
+func (db *EmbeddedDatabase) removeLogsByColonyName(colonyName string) error {
 	ids := db.logsIdx.byColony.Lookup(colonyName)
 	for _, id := range ids {
 		if l, ok := db.logs.Get(id); ok {

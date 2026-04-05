@@ -12,21 +12,19 @@ func copyUser(u *core.User) *core.User {
 }
 
 func (db *EmbeddedDatabase) AddUser(user *core.User) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	if user == nil {
 		return errors.New("User is nil")
 	}
 
-	existing, err := db.GetUserByName(user.ColonyName, user.Name)
-	if err != nil {
-		return err
-	}
-
-	if existing != nil {
+	key := user.ColonyName + ":" + user.Name
+	if _, ok := db.users.Get(key); ok {
 		return errors.New("User with name <" + user.Name + "> already exists in Colony with name <" + user.ColonyName + ">")
 	}
 
 	cp := copyUser(user)
-	key := cp.ColonyName + ":" + cp.Name
 	if err := db.users.Put(key, cp); err != nil {
 		return err
 	}
@@ -70,6 +68,9 @@ func (db *EmbeddedDatabase) GetUserByName(colonyName string, name string) (*core
 }
 
 func (db *EmbeddedDatabase) RemoveUserByID(colonyName string, userID string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	keys := db.usersIdx.byID.Lookup(userID)
 	for _, key := range keys {
 		if u, ok := db.users.Get(key); ok {
@@ -84,6 +85,9 @@ func (db *EmbeddedDatabase) RemoveUserByID(colonyName string, userID string) err
 }
 
 func (db *EmbeddedDatabase) RemoveUserByName(colonyName string, name string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	key := colonyName + ":" + name
 	u, ok := db.users.Get(key)
 	if !ok {
@@ -96,6 +100,14 @@ func (db *EmbeddedDatabase) RemoveUserByName(colonyName string, name string) err
 }
 
 func (db *EmbeddedDatabase) RemoveUsersByColonyName(colonyName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.removeUsersByColonyName(colonyName)
+}
+
+// removeUsersByColonyName is the internal unlocked version.
+// Called by RemoveColonyByName which already holds db.mu.
+func (db *EmbeddedDatabase) removeUsersByColonyName(colonyName string) error {
 	keys := db.usersIdx.byColony.Lookup(colonyName)
 	for _, key := range keys {
 		if u, ok := db.users.Get(key); ok {

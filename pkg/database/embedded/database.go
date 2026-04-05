@@ -20,6 +20,7 @@ type EmbeddedDatabase struct {
 	dataDir string
 	wal     wal.WAL
 	flusher *flusher.Flusher
+	mu      sync.RWMutex // database-level transaction lock for write atomicity
 
 	// Colony store (keyed by colony name)
 	colonies    *store.Store[string, core.Colony]
@@ -35,7 +36,6 @@ type EmbeddedDatabase struct {
 	}
 
 	// Executor store (keyed by executorID)
-	executorMu   sync.Mutex // protects add/remove executor transactions
 	executors    *store.Store[string, core.Executor]
 	executorsIdx struct {
 		byColony    *index.MapIndex[string, string] // colonyName -> set of executorIDs
@@ -807,66 +807,140 @@ func (db *EmbeddedDatabase) Drop() error {
 }
 
 func (db *EmbeddedDatabase) ApplyRetentionPolicy(retentionPeriod int64) error {
+	const batchSize = 100
 	cutoff := time.Now().Add(-time.Duration(retentionPeriod) * time.Second)
 
 	// Delete SUCCESS attributes whose parent process has SubmissionTime < cutoff
-	for _, a := range db.attributes.All() {
-		if a.State != core.SUCCESS {
-			continue
-		}
-		if p, ok := db.processes.Get(a.TargetID); ok {
-			if p.SubmissionTime.Before(cutoff) {
-				db.removeAttributeFromIndexes(a.ID, a)
-				db.attributes.Delete(a.ID)
+	for {
+		var batch []string
+		db.mu.RLock()
+		for _, a := range db.attributes.All() {
+			if a.State != core.SUCCESS {
+				continue
+			}
+			if p, ok := db.processes.Get(a.TargetID); ok {
+				if p.SubmissionTime.Before(cutoff) {
+					batch = append(batch, a.ID)
+					if len(batch) >= batchSize {
+						break
+					}
+				}
 			}
 		}
+		db.mu.RUnlock()
+		if len(batch) == 0 {
+			break
+		}
+		db.mu.Lock()
+		for _, id := range batch {
+			if a, ok := db.attributes.Get(id); ok {
+				if a.State == core.SUCCESS {
+					db.removeAttributeFromIndexes(a.ID, a)
+					db.attributes.Delete(a.ID)
+				}
+			}
+		}
+		db.mu.Unlock()
 	}
 
 	// Delete logs where Timestamp < cutoff
-	// Collect IDs first to avoid deadlock (ForEach holds RLock, Delete needs write Lock)
-	type logToDelete struct {
-		id           string
-		processID    string
-		executorName string
-		colonyName   string
-	}
-	var logsToDelete []logToDelete
-	db.logs.ForEach(func(logID string, l *core.Log) {
-		logTime := time.Unix(0, l.Timestamp)
-		if logTime.Before(cutoff) {
-			logsToDelete = append(logsToDelete, logToDelete{
-				id:           logID,
-				processID:    l.ProcessID,
-				executorName: l.ExecutorName,
-				colonyName:   l.ColonyName,
-			})
+	for {
+		type logToDelete struct {
+			id           string
+			processID    string
+			executorName string
+			colonyName   string
 		}
-	})
-	for _, ld := range logsToDelete {
-		db.logsIdx.byProcess.Remove(ld.id, ld.processID)
-		db.logsIdx.byExecutor.Remove(ld.id, ld.executorName)
-		db.logsIdx.byColony.Remove(ld.id, ld.colonyName)
-		db.logs.Delete(ld.id)
+		var batch []logToDelete
+		db.mu.RLock()
+		db.logs.ForEach(func(logID string, l *core.Log) {
+			if len(batch) >= batchSize {
+				return
+			}
+			logTime := time.Unix(0, l.Timestamp)
+			if logTime.Before(cutoff) {
+				batch = append(batch, logToDelete{
+					id:           logID,
+					processID:    l.ProcessID,
+					executorName: l.ExecutorName,
+					colonyName:   l.ColonyName,
+				})
+			}
+		})
+		db.mu.RUnlock()
+		if len(batch) == 0 {
+			break
+		}
+		db.mu.Lock()
+		for _, ld := range batch {
+			if _, ok := db.logs.Get(ld.id); ok {
+				db.logsIdx.byProcess.Remove(ld.id, ld.processID)
+				db.logsIdx.byExecutor.Remove(ld.id, ld.executorName)
+				db.logsIdx.byColony.Remove(ld.id, ld.colonyName)
+				db.logs.Delete(ld.id)
+			}
+		}
+		db.mu.Unlock()
 	}
 
 	// Delete SUCCESS processes where SubmissionTime < cutoff
-	for _, p := range db.processes.All() {
-		if p.State == core.SUCCESS && p.SubmissionTime.Before(cutoff) {
-			db.removeProcessFromIndexes(p)
-			db.RemoveAllAttributesByTargetID(p.ID)
-			db.processes.Delete(p.ID)
+	for {
+		var batch []string
+		db.mu.RLock()
+		for _, p := range db.processes.All() {
+			if p.State == core.SUCCESS && p.SubmissionTime.Before(cutoff) {
+				batch = append(batch, p.ID)
+				if len(batch) >= batchSize {
+					break
+				}
+			}
 		}
+		db.mu.RUnlock()
+		if len(batch) == 0 {
+			break
+		}
+		db.mu.Lock()
+		for _, id := range batch {
+			if p, ok := db.processes.Get(id); ok {
+				if p.State == core.SUCCESS && p.SubmissionTime.Before(cutoff) {
+					db.removeProcessFromIndexes(p)
+					db.removeAllAttributesByTargetID(p.ID)
+					db.processes.Delete(p.ID)
+				}
+			}
+		}
+		db.mu.Unlock()
 	}
 
 	// Delete SUCCESS process graphs where SubmissionTime < cutoff
-	for _, g := range db.processGraphs.All() {
-		if g.State == core.SUCCESS && g.SubmissionTime.Before(cutoff) {
-			db.processGraphsIdx.byColony.Remove(g.ColonyName, g.State, index.IndexEntry[string]{
-				SortKey:    g.SubmissionTime.UnixNano(),
-				PrimaryKey: g.ID,
-			})
-			db.processGraphs.Delete(g.ID)
+	for {
+		var batch []string
+		db.mu.RLock()
+		for _, g := range db.processGraphs.All() {
+			if g.State == core.SUCCESS && g.SubmissionTime.Before(cutoff) {
+				batch = append(batch, g.ID)
+				if len(batch) >= batchSize {
+					break
+				}
+			}
 		}
+		db.mu.RUnlock()
+		if len(batch) == 0 {
+			break
+		}
+		db.mu.Lock()
+		for _, id := range batch {
+			if g, ok := db.processGraphs.Get(id); ok {
+				if g.State == core.SUCCESS && g.SubmissionTime.Before(cutoff) {
+					db.processGraphsIdx.byColony.Remove(g.ColonyName, g.State, index.IndexEntry[string]{
+						SortKey:    g.SubmissionTime.UnixNano(),
+						PrimaryKey: g.ID,
+					})
+					db.processGraphs.Delete(g.ID)
+				}
+			}
+		}
+		db.mu.Unlock()
 	}
 
 	return nil

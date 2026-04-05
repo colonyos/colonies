@@ -12,6 +12,9 @@ import (
 )
 
 func (db *EmbeddedDatabase) AddProcess(process *core.Process) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	submissionTime := time.Now()
 	process.SetSubmissionTime(submissionTime)
 
@@ -47,8 +50,8 @@ func (db *EmbeddedDatabase) AddProcess(process *core.Process) error {
 		db.processesIdx.byGraph.Add(cp.ID, cp.ProcessGraphID)
 	}
 
-	// Add attributes
-	if err := db.AddAttributes(process.Attributes); err != nil {
+	// Add attributes (internal version to avoid double-locking)
+	if err := db.addAttributes(process.Attributes); err != nil {
 		return err
 	}
 
@@ -275,8 +278,8 @@ func (db *EmbeddedDatabase) FindCandidatesByName(colonyName string, executorName
 }
 
 func (db *EmbeddedDatabase) SelectAndAssign(colonyName string, executorID string, executorName string, executorType string, executorLocation string, cpu int64, memory int64, storage int64, nodes int, processes int, processesPerNode int, count int) (*core.Process, error) {
-	db.processes.Lock()
-	defer db.processes.Unlock()
+	db.mu.Lock()
+	defer db.mu.Unlock()
 
 	// Find best candidate: combines FindCandidatesByName + FindCandidates logic with OR
 	var bestProcess *core.Process
@@ -287,11 +290,11 @@ func (db *EmbeddedDatabase) SelectAndAssign(colonyName string, executorID string
 	}
 
 	idx.AscendFirst(count*10, func(entry index.IndexEntry[string]) bool {
-		p, ok := db.processes.GetUnlocked(entry.PrimaryKey)
+		p, ok := db.processes.Get(entry.PrimaryKey)
 		if !ok {
 			return true
 		}
-		if !db.matchCandidateUnlocked(p, executorType, executorLocation, cpu, memory, storage, nodes, processes, processesPerNode) {
+		if !db.matchCandidate(p, executorType, executorLocation, cpu, memory, storage, nodes, processes, processesPerNode) {
 			return true
 		}
 
@@ -323,7 +326,7 @@ func (db *EmbeddedDatabase) SelectAndAssign(colonyName string, executorID string
 		cp.ExecDeadline = now.Add(time.Duration(cp.FunctionSpec.MaxExecTime) * time.Second)
 	}
 
-	if err := db.processes.PutUnlocked(cp.ID, &cp); err != nil {
+	if err := db.processes.Put(cp.ID, &cp); err != nil {
 		return nil, err
 	}
 
@@ -346,6 +349,9 @@ func (db *EmbeddedDatabase) SelectAndAssign(colonyName string, executorID string
 }
 
 func (db *EmbeddedDatabase) Assign(executorID string, process *core.Process) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	p, ok := db.processes.Get(process.ID)
 	if !ok {
 		return errors.New("Process with Id <" + process.ID + "> not found")
@@ -397,6 +403,9 @@ func (db *EmbeddedDatabase) Assign(executorID string, process *core.Process) err
 }
 
 func (db *EmbeddedDatabase) Unassign(process *core.Process) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	p, ok := db.processes.Get(process.ID)
 	if !ok {
 		return errors.New("Process with Id <" + process.ID + "> not found")
@@ -443,6 +452,9 @@ func (db *EmbeddedDatabase) Unassign(process *core.Process) error {
 }
 
 func (db *EmbeddedDatabase) MarkSuccessful(processID string) (float64, float64, error) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	p, ok := db.processes.Get(processID)
 	if !ok {
 		return 0, 0, errors.New("Process with Id <" + processID + "> not found")
@@ -485,6 +497,9 @@ func (db *EmbeddedDatabase) MarkSuccessful(processID string) (float64, float64, 
 }
 
 func (db *EmbeddedDatabase) MarkFailed(processID string, errs []string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	p, ok := db.processes.Get(processID)
 	if !ok {
 		return errors.New("Process with Id <" + processID + "> not found")
@@ -528,6 +543,9 @@ func (db *EmbeddedDatabase) MarkFailed(processID string, errs []string) error {
 }
 
 func (db *EmbeddedDatabase) MarkCancelled(processID string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	p, ok := db.processes.Get(processID)
 	if !ok {
 		return errors.New("Process with Id <" + processID + "> not found")
@@ -570,6 +588,9 @@ func (db *EmbeddedDatabase) MarkCancelled(processID string) error {
 }
 
 func (db *EmbeddedDatabase) ResetProcess(process *core.Process) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	p, ok := db.processes.Get(process.ID)
 	if !ok {
 		return errors.New("Process with Id <" + process.ID + "> not found")
@@ -615,6 +636,9 @@ func (db *EmbeddedDatabase) ResetProcess(process *core.Process) error {
 }
 
 func (db *EmbeddedDatabase) SetInput(processID string, input []interface{}) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	p, ok := db.processes.Get(processID)
 	if !ok {
 		return errors.New("Process with Id <" + processID + "> not found")
@@ -625,6 +649,9 @@ func (db *EmbeddedDatabase) SetInput(processID string, input []interface{}) erro
 }
 
 func (db *EmbeddedDatabase) SetOutput(processID string, output []interface{}) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	p, ok := db.processes.Get(processID)
 	if !ok {
 		return errors.New("Process with Id <" + processID + "> not found")
@@ -635,6 +662,9 @@ func (db *EmbeddedDatabase) SetOutput(processID string, output []interface{}) er
 }
 
 func (db *EmbeddedDatabase) SetErrors(processID string, errs []string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	p, ok := db.processes.Get(processID)
 	if !ok {
 		return errors.New("Process with Id <" + processID + "> not found")
@@ -645,6 +675,9 @@ func (db *EmbeddedDatabase) SetErrors(processID string, errs []string) error {
 }
 
 func (db *EmbeddedDatabase) SetProcessState(processID string, state int) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	p, ok := db.processes.Get(processID)
 	if !ok {
 		return errors.New("Process with Id <" + processID + "> not found")
@@ -675,6 +708,9 @@ func (db *EmbeddedDatabase) SetProcessState(processID string, state int) error {
 }
 
 func (db *EmbeddedDatabase) SetParents(processID string, parents []string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	p, ok := db.processes.Get(processID)
 	if !ok {
 		return errors.New("Process with Id <" + processID + "> not found")
@@ -685,6 +721,9 @@ func (db *EmbeddedDatabase) SetParents(processID string, parents []string) error
 }
 
 func (db *EmbeddedDatabase) SetChildren(processID string, children []string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	p, ok := db.processes.Get(processID)
 	if !ok {
 		return errors.New("Process with Id <" + processID + "> not found")
@@ -695,6 +734,9 @@ func (db *EmbeddedDatabase) SetChildren(processID string, children []string) err
 }
 
 func (db *EmbeddedDatabase) SetWaitForParents(processID string, waitForParent bool) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	p, ok := db.processes.Get(processID)
 	if !ok {
 		return errors.New("Process with Id <" + processID + "> not found")
@@ -705,21 +747,35 @@ func (db *EmbeddedDatabase) SetWaitForParents(processID string, waitForParent bo
 }
 
 func (db *EmbeddedDatabase) RemoveProcessByID(processID string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	return db.removeProcessByID(processID)
+}
+
+func (db *EmbeddedDatabase) removeProcessByID(processID string) error {
 	p, ok := db.processes.Get(processID)
 	if !ok {
 		return nil
 	}
 	db.removeProcessFromIndexes(p)
-	db.RemoveAllAttributesByTargetID(processID)
+	db.removeAllAttributesByTargetID(processID)
 	return db.processes.Delete(processID)
 }
 
 func (db *EmbeddedDatabase) RemoveAllProcesses() error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	return db.removeAllProcesses()
+}
+
+func (db *EmbeddedDatabase) removeAllProcesses() error {
 	for _, p := range db.processes.All() {
 		db.removeProcessFromIndexes(p)
 		db.processes.Delete(p.ID)
 	}
-	db.RemoveAllAttributes()
+	db.removeAllAttributes()
 	return nil
 }
 
@@ -732,47 +788,76 @@ func (db *EmbeddedDatabase) removeProcessesByColonyNameAndState(colonyName strin
 	})
 	for _, p := range processes {
 		db.removeProcessFromIndexes(p)
-		db.RemoveAllAttributesByTargetID(p.ID)
+		db.removeAllAttributesByTargetID(p.ID)
 		db.processes.Delete(p.ID)
 	}
-	db.RemoveAllAttributesByColonyNameWithState(colonyName, state)
+	db.removeAllAttributesByColonyNameWithState(colonyName, state)
 	return nil
 }
 
 func (db *EmbeddedDatabase) RemoveAllWaitingProcessesByColonyName(colonyName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	return db.removeProcessesByColonyNameAndState(colonyName, core.WAITING)
 }
 
 func (db *EmbeddedDatabase) RemoveAllRunningProcessesByColonyName(colonyName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	return db.removeProcessesByColonyNameAndState(colonyName, core.RUNNING)
 }
 
 func (db *EmbeddedDatabase) RemoveAllSuccessfulProcessesByColonyName(colonyName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	return db.removeProcessesByColonyNameAndState(colonyName, core.SUCCESS)
 }
 
 func (db *EmbeddedDatabase) RemoveAllFailedProcessesByColonyName(colonyName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	return db.removeProcessesByColonyNameAndState(colonyName, core.FAILED)
 }
 
 func (db *EmbeddedDatabase) RemoveAllCancelledProcessesByColonyName(colonyName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	return db.removeProcessesByColonyNameAndState(colonyName, core.CANCELLED)
 }
 
 func (db *EmbeddedDatabase) RemoveAllProcessesByColonyName(colonyName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	return db.removeAllProcessesByColonyName(colonyName)
+}
+
+func (db *EmbeddedDatabase) removeAllProcessesByColonyName(colonyName string) error {
 	processes := db.processes.Filter(func(p *core.Process) bool {
 		return p.FunctionSpec.Conditions.ColonyName == colonyName && p.ProcessGraphID == ""
 	})
 	for _, p := range processes {
 		db.removeProcessFromIndexes(p)
-		db.RemoveAllAttributesByTargetID(p.ID)
+		db.removeAllAttributesByTargetID(p.ID)
 		db.processes.Delete(p.ID)
 	}
-	db.RemoveAllAttributesByColonyName(colonyName)
+	db.removeAllAttributesByColonyName(colonyName)
 	return nil
 }
 
 func (db *EmbeddedDatabase) RemoveAllProcessesByProcessGraphID(processGraphID string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	return db.removeAllProcessesByProcessGraphID(processGraphID)
+}
+
+func (db *EmbeddedDatabase) removeAllProcessesByProcessGraphID(processGraphID string) error {
 	ids := db.processesIdx.byGraph.Lookup(processGraphID)
 	for _, id := range ids {
 		if p, ok := db.processes.Get(id); ok {
@@ -780,12 +865,19 @@ func (db *EmbeddedDatabase) RemoveAllProcessesByProcessGraphID(processGraphID st
 			db.processes.Delete(id)
 		}
 	}
-	db.RemoveAllAttributesByProcessGraphID(processGraphID)
+	db.removeAllAttributesByProcessGraphID(processGraphID)
 	return nil
 }
 
 func (db *EmbeddedDatabase) RemoveAllProcessesInProcessGraphsByColonyName(colonyName string) error {
-	db.RemoveAllAttributesInProcessGraphsByColonyName(colonyName)
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	return db.removeAllProcessesInProcessGraphsByColonyName(colonyName)
+}
+
+func (db *EmbeddedDatabase) removeAllProcessesInProcessGraphsByColonyName(colonyName string) error {
+	db.removeAllAttributesInProcessGraphsByColonyName(colonyName)
 	processes := db.processes.Filter(func(p *core.Process) bool {
 		return p.FunctionSpec.Conditions.ColonyName == colonyName && p.ProcessGraphID != ""
 	})
@@ -1018,11 +1110,6 @@ func (db *EmbeddedDatabase) matchCandidate(p *core.Process, executorType string,
 	}
 
 	return true
-}
-
-// matchCandidateUnlocked is the same as matchCandidate but used when the store is already locked.
-func (db *EmbeddedDatabase) matchCandidateUnlocked(p *core.Process, executorType string, executorLocationName string, cpu int64, memory int64, storage int64, nodes int, processes int, processesPerNode int) bool {
-	return db.matchCandidate(p, executorType, executorLocationName, cpu, memory, storage, nodes, processes, processesPerNode)
 }
 
 func containsString(slice []string, s string) bool {

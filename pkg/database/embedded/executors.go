@@ -39,8 +39,8 @@ func (db *EmbeddedDatabase) AddExecutor(executor *core.Executor) error {
 		return errors.New("Executor is nil")
 	}
 
-	db.executorMu.Lock()
-	defer db.executorMu.Unlock()
+	db.mu.Lock()
+	defer db.mu.Unlock()
 
 	existingExecutor, err := db.getExecutorByNameInternal(executor.ColonyName, executor.Name)
 	if err != nil {
@@ -89,6 +89,9 @@ func (db *EmbeddedDatabase) AddExecutor(executor *core.Executor) error {
 }
 
 func (db *EmbeddedDatabase) SetAllocations(colonyName string, executorName string, allocations core.Allocations) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	e, err := db.getExecutorByNameInternal(colonyName, executorName)
 	if err != nil {
 		return err
@@ -175,6 +178,9 @@ func (db *EmbeddedDatabase) GetExecutorsByBlueprintID(blueprintID string) ([]*co
 }
 
 func (db *EmbeddedDatabase) ApproveExecutor(executor *core.Executor) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	e, ok := db.executors.Get(executor.ID)
 	if !ok {
 		return nil
@@ -187,6 +193,9 @@ func (db *EmbeddedDatabase) ApproveExecutor(executor *core.Executor) error {
 }
 
 func (db *EmbeddedDatabase) RejectExecutor(executor *core.Executor) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	e, ok := db.executors.Get(executor.ID)
 	if !ok {
 		return nil
@@ -199,6 +208,9 @@ func (db *EmbeddedDatabase) RejectExecutor(executor *core.Executor) error {
 }
 
 func (db *EmbeddedDatabase) MarkAlive(executor *core.Executor) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	e, ok := db.executors.Get(executor.ID)
 	if !ok {
 		return nil
@@ -210,9 +222,12 @@ func (db *EmbeddedDatabase) MarkAlive(executor *core.Executor) error {
 }
 
 func (db *EmbeddedDatabase) RemoveExecutorByName(colonyName string, executorName string) error {
-	db.executorMu.Lock()
-	defer db.executorMu.Unlock()
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.removeExecutorByName(colonyName, executorName)
+}
 
+func (db *EmbeddedDatabase) removeExecutorByName(colonyName string, executorName string) error {
 	e, err := db.getExecutorByNameInternal(colonyName, executorName)
 	if err != nil {
 		return err
@@ -256,10 +271,16 @@ func (db *EmbeddedDatabase) RemoveExecutorByName(colonyName string, executorName
 	}
 
 	// Remove functions for this executor
-	return db.RemoveFunctionsByExecutorName(colonyName, executorName)
+	return db.removeFunctionsByExecutorName(colonyName, executorName)
 }
 
 func (db *EmbeddedDatabase) RemoveExecutorsByColonyName(colonyName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.removeExecutorsByColonyName(colonyName)
+}
+
+func (db *EmbeddedDatabase) removeExecutorsByColonyName(colonyName string) error {
 	ids := db.executorsIdx.byColony.Lookup(colonyName)
 	for _, id := range ids {
 		if e, ok := db.executors.Get(id); ok {
@@ -274,7 +295,7 @@ func (db *EmbeddedDatabase) RemoveExecutorsByColonyName(colonyName string) error
 		}
 	}
 
-	return db.RemoveFunctionsByColonyName(colonyName)
+	return db.removeFunctionsByColonyName(colonyName)
 }
 
 func (db *EmbeddedDatabase) CountExecutors() (int, error) {
@@ -301,6 +322,9 @@ func (db *EmbeddedDatabase) CountExecutorsByColonyNameAndState(colonyName string
 }
 
 func (db *EmbeddedDatabase) UpdateExecutorCapabilities(colonyName string, executorName string, capabilities core.Capabilities) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	e, err := db.getExecutorByNameInternal(colonyName, executorName)
 	if err != nil {
 		return err

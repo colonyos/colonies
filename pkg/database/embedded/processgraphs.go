@@ -30,6 +30,9 @@ func copyProcessGraph(g *core.ProcessGraph) *core.ProcessGraph {
 }
 
 func (db *EmbeddedDatabase) AddProcessGraph(processGraph *core.ProcessGraph) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	processGraph.SubmissionTime = time.Now()
 	processGraph.State = core.WAITING
 
@@ -55,6 +58,9 @@ func (db *EmbeddedDatabase) GetProcessGraphByID(processGraphID string) (*core.Pr
 }
 
 func (db *EmbeddedDatabase) SetProcessGraphState(processGraphID string, state int) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	g, ok := db.processGraphs.Get(processGraphID)
 	if !ok {
 		return nil
@@ -124,6 +130,9 @@ func (db *EmbeddedDatabase) FindCancelledProcessGraphs(colonyName string, count 
 }
 
 func (db *EmbeddedDatabase) RemoveProcessGraphByID(processGraphID string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	g, ok := db.processGraphs.Get(processGraphID)
 	if !ok {
 		return nil
@@ -135,10 +144,16 @@ func (db *EmbeddedDatabase) RemoveProcessGraphByID(processGraphID string) error 
 	})
 	db.processGraphs.Delete(processGraphID)
 
-	return db.RemoveAllProcessesByProcessGraphID(processGraphID)
+	return db.removeAllProcessesByProcessGraphID(processGraphID)
 }
 
 func (db *EmbeddedDatabase) RemoveAllProcessGraphsByColonyName(colonyName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.removeAllProcessGraphsByColonyName(colonyName)
+}
+
+func (db *EmbeddedDatabase) removeAllProcessGraphsByColonyName(colonyName string) error {
 	graphs := db.processGraphs.Filter(func(g *core.ProcessGraph) bool {
 		return g.ColonyName == colonyName
 	})
@@ -149,7 +164,7 @@ func (db *EmbeddedDatabase) RemoveAllProcessGraphsByColonyName(colonyName string
 		})
 		db.processGraphs.Delete(g.ID)
 	}
-	return db.RemoveAllProcessesInProcessGraphsByColonyName(colonyName)
+	return db.removeAllProcessesInProcessGraphsByColonyName(colonyName)
 }
 
 func (db *EmbeddedDatabase) removeProcessGraphsByColonyNameAndState(colonyName string, state int) error {
@@ -171,22 +186,32 @@ func (db *EmbeddedDatabase) removeProcessGraphsByColonyNameAndState(colonyName s
 }
 
 func (db *EmbeddedDatabase) RemoveAllWaitingProcessGraphsByColonyName(colonyName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
 	return db.removeProcessGraphsByColonyNameAndState(colonyName, core.WAITING)
 }
 
 func (db *EmbeddedDatabase) RemoveAllRunningProcessGraphsByColonyName(colonyName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
 	return db.removeProcessGraphsByColonyNameAndState(colonyName, core.RUNNING)
 }
 
 func (db *EmbeddedDatabase) RemoveAllSuccessfulProcessGraphsByColonyName(colonyName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
 	return db.removeProcessGraphsByColonyNameAndState(colonyName, core.SUCCESS)
 }
 
 func (db *EmbeddedDatabase) RemoveAllFailedProcessGraphsByColonyName(colonyName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
 	return db.removeProcessGraphsByColonyNameAndState(colonyName, core.FAILED)
 }
 
 func (db *EmbeddedDatabase) RemoveAllCancelledProcessGraphsByColonyName(colonyName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
 	return db.removeProcessGraphsByColonyNameAndState(colonyName, core.CANCELLED)
 }
 
@@ -233,7 +258,7 @@ func (db *EmbeddedDatabase) CountCancelledProcessGraphsByColonyName(colonyName s
 // removeProcessesInProcessGraphsByColonyNameWithState removes processes in process graphs
 // with matching colony name and state. Internal helper for cascade deletes.
 func (db *EmbeddedDatabase) removeProcessesInProcessGraphsByColonyNameWithState(colonyName string, state int) {
-	db.RemoveAllAttributesInProcessGraphsByColonyNameWithState(colonyName, state)
+	db.removeAllAttributesInProcessGraphsByColonyNameWithState(colonyName, state)
 	processes := db.processes.Filter(func(p *core.Process) bool {
 		return p.FunctionSpec.Conditions.ColonyName == colonyName &&
 			p.ProcessGraphID != "" &&

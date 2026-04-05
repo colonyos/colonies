@@ -15,6 +15,9 @@ func copyFile(f *core.File) *core.File {
 }
 
 func (db *EmbeddedDatabase) AddFile(file *core.File) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	seqNr := atomic.AddInt64(&db.fileSeqCounter, 1)
 	file.SequenceNumber = seqNr
 	file.Added = time.Now()
@@ -131,6 +134,9 @@ func (db *EmbeddedDatabase) GetFileDataByLabel(colonyName string, label string) 
 }
 
 func (db *EmbeddedDatabase) RemoveFileByID(colonyName string, fileID string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	f, ok := db.files.Get(fileID)
 	if !ok {
 		return nil
@@ -143,6 +149,9 @@ func (db *EmbeddedDatabase) RemoveFileByID(colonyName string, fileID string) err
 }
 
 func (db *EmbeddedDatabase) RemoveFileByName(colonyName string, label string, name string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	key := colonyName + ":" + label + ":" + name
 	ids := db.filesIdx.byName.Lookup(key)
 	for _, id := range ids {

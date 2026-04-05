@@ -12,12 +12,15 @@ func copyColony(c *core.Colony) *core.Colony {
 }
 
 func (db *EmbeddedDatabase) AddColony(colony *core.Colony) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	if colony == nil {
 		return errors.New("Colony is nil")
 	}
 
-	existing, _ := db.GetColonyByName(colony.Name)
-	if existing != nil {
+	_, ok := db.colonies.Get(colony.Name)
+	if ok {
 		return errors.New("Colony with name <" + colony.Name + "> already exists")
 	}
 
@@ -64,6 +67,9 @@ func (db *EmbeddedDatabase) GetColonyByName(name string) (*core.Colony, error) {
 }
 
 func (db *EmbeddedDatabase) RenameColony(colonyName string, newName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	colony, ok := db.colonies.Get(colonyName)
 	if !ok {
 		return errors.New("Colony does not exist")
@@ -87,21 +93,25 @@ func (db *EmbeddedDatabase) RenameColony(colonyName string, newName string) erro
 }
 
 func (db *EmbeddedDatabase) RemoveColonyByName(colonyName string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	colony, ok := db.colonies.Get(colonyName)
 	if !ok {
 		return errors.New("Colony does not exist")
 	}
 
-	// Cascade delete all dependent entities
-	if err := db.RemoveUsersByColonyName(colonyName); err != nil {
+	// Cascade delete all dependent entities (use internal unlocked versions
+	// for methods that also acquire db.mu in their public versions)
+	if err := db.removeUsersByColonyName(colonyName); err != nil {
 		return err
 	}
 
-	if err := db.RemoveExecutorsByColonyName(colonyName); err != nil {
+	if err := db.removeExecutorsByColonyName(colonyName); err != nil {
 		return err
 	}
 
-	if err := db.RemoveLocationsByColonyName(colonyName); err != nil {
+	if err := db.removeLocationsByColonyName(colonyName); err != nil {
 		return err
 	}
 
@@ -111,31 +121,31 @@ func (db *EmbeddedDatabase) RemoveColonyByName(colonyName string) error {
 		return err
 	}
 
-	if err := db.RemoveAllProcessesByColonyName(colonyName); err != nil {
+	if err := db.removeAllProcessesByColonyName(colonyName); err != nil {
 		return err
 	}
 
-	if err := db.RemoveAllProcessGraphsByColonyName(colonyName); err != nil {
+	if err := db.removeAllProcessGraphsByColonyName(colonyName); err != nil {
 		return err
 	}
 
-	if err := db.RemoveAllGeneratorsByColonyName(colonyName); err != nil {
+	if err := db.removeAllGeneratorsByColonyName(colonyName); err != nil {
 		return err
 	}
 
-	if err := db.RemoveAllCronsByColonyName(colonyName); err != nil {
+	if err := db.removeAllCronsByColonyName(colonyName); err != nil {
 		return err
 	}
 
-	if err := db.RemoveFunctionsByColonyName(colonyName); err != nil {
+	if err := db.removeFunctionsByColonyName(colonyName); err != nil {
 		return err
 	}
 
-	if err := db.RemoveLogsByColonyName(colonyName); err != nil {
+	if err := db.removeLogsByColonyName(colonyName); err != nil {
 		return err
 	}
 
-	if err := db.RemoveSnapshotsByColonyName(colonyName); err != nil {
+	if err := db.removeSnapshotsByColonyName(colonyName); err != nil {
 		return err
 	}
 

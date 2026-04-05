@@ -1,6 +1,9 @@
 package embedded
 
 func (db *EmbeddedDatabase) SetServerID(oldServerID, newServerID string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	if oldServerID == "" {
 		return db.server.Put("serverid", &newServerID)
 	}
@@ -17,6 +20,9 @@ func (db *EmbeddedDatabase) GetServerID() (string, error) {
 }
 
 func (db *EmbeddedDatabase) ChangeColonyID(colonyName string, oldColonyID, newColonyID string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	colony, ok := db.colonies.Get(colonyName)
 	if !ok {
 		return nil
@@ -37,6 +43,9 @@ func (db *EmbeddedDatabase) ChangeColonyID(colonyName string, oldColonyID, newCo
 }
 
 func (db *EmbeddedDatabase) ChangeUserID(colonyName string, oldUserID, newUserID string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	keys := db.usersIdx.byID.Lookup(oldUserID)
 	for _, key := range keys {
 		u, ok := db.users.Get(key)
@@ -58,6 +67,9 @@ func (db *EmbeddedDatabase) ChangeUserID(colonyName string, oldUserID, newUserID
 }
 
 func (db *EmbeddedDatabase) ChangeExecutorID(colonyName string, oldExecutorID, newExecutorID string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	executor, ok := db.executors.Get(oldExecutorID)
 	if !ok {
 		return nil
