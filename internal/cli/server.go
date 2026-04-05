@@ -4,9 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/colonyos/colonies/pkg/client"
@@ -96,13 +98,23 @@ func startServer(
 		log.WithFields(log.Fields{"RelayHost": RelayHost}).Info("Relay tunnel client started")
 	}
 
-	for {
-		err := srv.ServeForever()
-		if err != nil {
-			log.WithFields(log.Fields{"Error": err}).Error("Failed to start Colonies Server")
-			time.Sleep(1 * time.Second)
-		}
+	// Handle graceful shutdown on SIGINT/SIGTERM
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		sig := <-sigCh
+		log.WithFields(log.Fields{"Signal": sig}).Info("Received shutdown signal, stopping server")
+		srv.Shutdown()
+	}()
+
+	err := srv.ServeForever()
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Debug("Server stopped")
 	}
+
+	db.Close()
+	log.Info("Server stopped gracefully")
 }
 
 var serverCmd = &cobra.Command{
