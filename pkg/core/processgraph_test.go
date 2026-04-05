@@ -1,6 +1,7 @@
 package core
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -930,6 +931,76 @@ func TestProcessGraphGetLeaves(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, leaves, 1)
 	assert.Equal(t, leaves[0], process4.ID)
+}
+
+// TestProcessGraphConcurrentToJSONRace replicates a race condition where
+// shallow-copying a ProcessGraph (as the embedded DB's copyProcessGraph does)
+// causes two copies to share the same underlying nodesMap. Concurrent ToJSON
+// calls then race on that shared map. Run with -race to detect the bug.
+func TestProcessGraphConcurrentToJSONRace(t *testing.T) {
+	process1 := createProcess()
+	process2 := createProcess()
+	process3 := createProcess()
+	process4 := createProcess()
+
+	//        process1
+	//          / \
+	//  process2   process3
+	//          \ /
+	//        process4
+
+	process1.AddChild(process2.ID)
+	process1.AddChild(process3.ID)
+	process2.AddParent(process1.ID)
+	process3.AddParent(process1.ID)
+	process2.AddChild(process4.ID)
+	process3.AddChild(process4.ID)
+	process4.AddParent(process2.ID)
+	process4.AddParent(process3.ID)
+
+	mock := createProcessGraphStorageMock()
+	mock.addProcess(process1)
+	mock.addProcess(process2)
+	mock.addProcess(process3)
+	mock.addProcess(process4)
+
+	colonyName := GenerateRandomID()
+
+	graph, err := CreateProcessGraph(colonyName)
+	assert.Nil(t, err)
+
+	graph.storage = mock
+	graph.AddRoot(process1.ID)
+
+	// Simulate what the embedded DB's copyProcessGraph does: a shallow struct
+	// copy via `cp := *g`. This copies the nodesMap header, so both the
+	// original and the copy point to the same underlying map.
+	shallowCopy := *graph
+
+	// Both graphs share the same nodesMap. Concurrent ToJSON -> calcNodes
+	// writes to and iterates this shared map, causing the race.
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 100; i++ {
+			graph.Nodes = nil
+			graph.Edges = nil
+			_, _ = graph.ToJSON()
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 100; i++ {
+			shallowCopy.Nodes = nil
+			shallowCopy.Edges = nil
+			_, _ = shallowCopy.ToJSON()
+		}
+	}()
+
+	wg.Wait()
 }
 
 func TestProcessGraphGetLeaves2(t *testing.T) {

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/colonyos/colonies/pkg/constants"
+	"github.com/colonyos/colonies/pkg/core"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -198,6 +199,11 @@ func (controller *ColoniesController) cleanupStaleExecutors() {
 		// Skip executors that have never communicated (LastHeardFromTime is zero)
 		// This prevents removing newly registered executors before they have a chance to communicate
 		if executor.LastHeardFromTime.IsZero() {
+			continue
+		}
+
+		// Skip already unregistered executors
+		if executor.State == core.UNREGISTERED {
 			continue
 		}
 

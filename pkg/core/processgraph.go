@@ -289,6 +289,8 @@ func (graph *ProcessGraph) calcNodes() error {
 		return nil
 	}
 
+	graph.nodesMap = make(map[string]*GraphNode)
+
 	paddingsPerLevel := make(map[int]int)
 	nodesPerDepth := make(map[int][]*GraphNode)
 
