@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sync"
 	"path/filepath"
 	"time"
 
@@ -34,6 +35,7 @@ type EmbeddedDatabase struct {
 	}
 
 	// Executor store (keyed by executorID)
+	executorMu   sync.Mutex // protects add/remove executor transactions
 	executors    *store.Store[string, core.Executor]
 	executorsIdx struct {
 		byColony    *index.MapIndex[string, string] // colonyName -> set of executorIDs
@@ -147,6 +149,13 @@ type EmbeddedDatabase struct {
 
 	// File sequence counter
 	fileSeqCounter int64
+
+	// Metric store (keyed by metricID)
+	metrics    *store.Store[string, core.Metric]
+	metricsIdx struct {
+		byExecutor *index.MapIndex[string, string] // "colonyName:executorName" -> set of metricIDs
+		byColony   *index.MapIndex[string, string] // colonyName -> set of metricIDs
+	}
 }
 
 func CreateEmbeddedDatabase(dataDir string) *EmbeddedDatabase {
@@ -209,7 +218,7 @@ func (db *EmbeddedDatabase) createStores(w wal.WAL) error {
 		"generators", "generatorargs", "crons", "snapshots",
 		"locations", "server", "blueprintdefs", "blueprints",
 		"blueprinthistory", "processes", "attributes",
-		"processgraphs", "logs", "files",
+		"processgraphs", "logs", "files", "metrics",
 	}
 
 	for _, e := range entities {
@@ -398,6 +407,16 @@ func (db *EmbeddedDatabase) createStores(w wal.WAL) error {
 		KeyToStr: identity, StrToKey: identity,
 	})
 
+	// Metrics
+	metricsDisk, err := diskstore.NewDiskStore[core.Metric](createDiskStore("metrics"), "")
+	if err != nil {
+		return fmt.Errorf("failed to create disk store for metrics: %w", err)
+	}
+	db.metrics = store.NewStore(store.Config[string, core.Metric]{
+		Disk: metricsDisk, WAL: w, EntityName: "metrics",
+		KeyToStr: identity, StrToKey: identity,
+	})
+
 	// Create all indexes
 	db.createIndexes()
 
@@ -465,6 +484,10 @@ func (db *EmbeddedDatabase) createIndexes() {
 	db.filesIdx.byColony = index.NewMapIndex[string, string]()
 	db.filesIdx.byLabel = index.NewMapIndex[string, string]()
 	db.filesIdx.byName = index.NewMapIndex[string, string]()
+
+	// Metric indexes
+	db.metricsIdx.byExecutor = index.NewMapIndex[string, string]()
+	db.metricsIdx.byColony = index.NewMapIndex[string, string]()
 }
 
 func (db *EmbeddedDatabase) replayWAL(w wal.WAL) error {
@@ -487,6 +510,7 @@ func (db *EmbeddedDatabase) replayWAL(w wal.WAL) error {
 	db.processGraphs.Lock()
 	db.logs.Lock()
 	db.files.Lock()
+	db.metrics.Lock()
 
 	defer func() {
 		db.colonies.Unlock()
@@ -507,6 +531,7 @@ func (db *EmbeddedDatabase) replayWAL(w wal.WAL) error {
 		db.processGraphs.Unlock()
 		db.logs.Unlock()
 		db.files.Unlock()
+		db.metrics.Unlock()
 	}()
 
 	return w.Replay(func(entry wal.Entry) error {
@@ -547,6 +572,8 @@ func (db *EmbeddedDatabase) replayWAL(w wal.WAL) error {
 			return replayEntry(entry, db.logs)
 		case "files":
 			return replayEntry(entry, db.files)
+		case "metrics":
+			return replayEntry(entry, db.metrics)
 		}
 		return nil
 	})
@@ -575,7 +602,7 @@ func (db *EmbeddedDatabase) loadAll() error {
 		db.generators, db.generatorArgs, db.crons, db.snapshots,
 		db.locations, db.server, db.blueprintDefs, db.blueprints,
 		db.blueprintHistory, db.processes, db.attributes,
-		db.processGraphs, db.logs, db.files,
+		db.processGraphs, db.logs, db.files, db.metrics,
 	}
 	for _, s := range stores {
 		if err := s.LoadAll(); err != nil {
@@ -604,6 +631,7 @@ func (db *EmbeddedDatabase) setWALOnStores(w wal.WAL) {
 	db.processGraphs.SetWAL(w)
 	db.logs.SetWAL(w)
 	db.files.SetWAL(w)
+	db.metrics.SetWAL(w)
 }
 
 func (db *EmbeddedDatabase) rebuildIndexes() {
@@ -726,6 +754,12 @@ func (db *EmbeddedDatabase) rebuildIndexes() {
 			db.fileSeqCounter = f.SequenceNumber
 		}
 	}
+
+	// Metrics
+	for _, m := range db.metrics.All() {
+		db.metricsIdx.byExecutor.Add(m.ID, m.ColonyName+":"+m.ExecutorName)
+		db.metricsIdx.byColony.Add(m.ID, m.ColonyName)
+	}
 }
 
 func (db *EmbeddedDatabase) addStoresToFlusher() {
@@ -747,6 +781,7 @@ func (db *EmbeddedDatabase) addStoresToFlusher() {
 	db.flusher.AddStore(db.processGraphs)
 	db.flusher.AddStore(db.logs)
 	db.flusher.AddStore(db.files)
+	db.flusher.AddStore(db.metrics)
 }
 
 func (db *EmbeddedDatabase) Close() {

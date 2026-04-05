@@ -31,6 +31,7 @@ import (
 	generatorhandlers "github.com/colonyos/colonies/pkg/server/handlers/generator"
 	locationhandlers "github.com/colonyos/colonies/pkg/server/handlers/location"
 	loghandlers "github.com/colonyos/colonies/pkg/server/handlers/log"
+	metrichandlers "github.com/colonyos/colonies/pkg/server/handlers/metric"
 	"github.com/colonyos/colonies/pkg/server/handlers/process"
 	"github.com/colonyos/colonies/pkg/server/handlers/processgraph"
 	realtimehandlers "github.com/colonyos/colonies/pkg/server/handlers/realtime"
@@ -74,6 +75,7 @@ type Server struct {
 	resourceDB              database.BlueprintDatabase
 	securityDB              database.SecurityDatabase
 	locationDB              database.LocationDatabase
+	metricDB                database.MetricDatabase
 	exclusiveAssign         bool
 	allowExecutorReregister bool
 	retention               bool
@@ -101,6 +103,7 @@ type Server struct {
 	realtimeHandlers       *realtimehandlers.Handlers
 	channelHandlers        *channelhandlers.Handlers
 	locationHandlers       *locationhandlers.Handlers
+	metricHandlers         *metrichandlers.Handlers
 	backendRealtimeHandler realtimehandlers.RealtimeHandler
 	channelRouter          *channel.Router
 
@@ -172,6 +175,7 @@ func createServerInternal(db database.Database,
 	server.resourceDB = db
 	server.securityDB = db
 	server.locationDB = db
+	server.metricDB = db
 
 	server.controller = controllers.CreateColoniesController(db, thisNode, clusterConfig, etcdDataPath, generatorPeriod, cronPeriod, retention, retentionPolicy, retentionPeriod, staleExecutorDuration)
 
@@ -208,6 +212,7 @@ func createServerInternal(db database.Database,
 	server.channelRouter = server.controller.GetChannelRouter()
 	server.channelHandlers = channelhandlers.NewHandlers(server.serverAdapter)
 	server.locationHandlers = locationhandlers.NewHandlers(server.serverAdapter)
+	server.metricHandlers = metrichandlers.NewHandlers(server.serverAdapter)
 
 	// Initialize ColonyFS object store if configured
 	server.fileStorageType = fileStorageType
@@ -343,6 +348,11 @@ func (server *Server) registerHandlers() {
 	// Register location handlers
 	if err := server.locationHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
 		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register location handlers")
+	}
+
+	// Register metric handlers
+	if err := server.metricHandlers.RegisterHandlers(server.handlerRegistry); err != nil {
+		log.WithFields(log.Fields{"Error": err}).Fatal("Failed to register metric handlers")
 	}
 }
 

@@ -127,6 +127,10 @@ func (s *ServerAdapter) ProcessGraphDB() database.ProcessGraphDatabase {
 	return s.server.processGraphDB
 }
 
+func (s *ServerAdapter) MetricDB() database.MetricDatabase {
+	return s.server.metricDB
+}
+
 type generatorControllerAdapter struct {
 	controller interface {
 		AddGenerator(generator *core.Generator) (*core.Generator, error)

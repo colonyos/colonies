@@ -161,6 +161,9 @@ var Fix bool
 var FileStorageType string
 var FileStorageDir string
 var RelayHost string
+var MetricPeriod string
+var FromDate string
+var ToDate string
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Verbose (debugging)")

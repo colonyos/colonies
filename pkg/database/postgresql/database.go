@@ -411,6 +411,11 @@ func (db *PQDatabase) Drop() error {
 		return err
 	}
 
+	err = db.dropMetricsTable()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -1016,6 +1021,11 @@ func (db *PQDatabase) Initialize() error {
 	}
 
 	err = db.createLocationsTable()
+	if err != nil {
+		return err
+	}
+
+	err = db.createMetricsTable()
 	if err != nil {
 		return err
 	}
