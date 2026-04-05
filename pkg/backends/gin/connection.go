@@ -28,6 +28,9 @@ func (w *WebSocketConnection) Close() error {
 	if w.conn == nil {
 		return nil
 	}
+	// Send proper close frame before closing
+	w.conn.WriteMessage(websocket.CloseMessage,
+		websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	err := w.conn.Close()
 	w.conn = nil
 	return err
