@@ -87,8 +87,9 @@ endif
 	@cd pkg/cluster; go test -v --race
 	@cd pkg/cron; go test -v --race
 	@cd pkg/fs; go test -v --race
+ifeq ($(COLONIES_FILE_STORAGE_TYPE),coloniesfs)
 	@cd pkg/fs/localstore; go test -v --race
-ifneq ($(COLONIES_FILE_STORAGE_TYPE),coloniesfs)
+else
 	@cd pkg/fs/s3; go test -v --race
 endif
 

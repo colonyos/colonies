@@ -615,6 +615,19 @@ func (db *DatabaseMock) Lock(timeout int) error { return nil }
 func (db *DatabaseMock) Unlock() error { return nil }
 func (db *DatabaseMock) ApplyRetentionPolicy(retentionPeriod int64) error { return nil }
 
+// Metric methods
+func (db *DatabaseMock) SetMetric(metric core.Metric) error { return nil }
+func (db *DatabaseMock) GetMetric(colonyName string, executorName string, key string, period int, periodStart time.Time) (core.Metric, error) { return core.Metric{}, nil }
+func (db *DatabaseMock) GetMetricsByExecutorName(colonyName string, executorName string) ([]core.Metric, error) { return nil, nil }
+func (db *DatabaseMock) GetAllMetricsByExecutorName(colonyName string, executorName string) ([]core.Metric, error) { return nil, nil }
+func (db *DatabaseMock) GetMetricsByColonyName(colonyName string) ([]core.Metric, error) { return nil, nil }
+func (db *DatabaseMock) GetMetricHistory(colonyName string, executorName string, key string, period int, from time.Time, to time.Time) ([]core.Metric, error) { return nil, nil }
+func (db *DatabaseMock) IncrementMetric(colonyName string, executorName string, key string, period int, periodStart time.Time, delta float64) error { return nil }
+func (db *DatabaseMock) RemoveMetric(colonyName string, executorName string, key string, period int, periodStart time.Time) error { return nil }
+func (db *DatabaseMock) RemoveAllMetricsByExecutorName(colonyName string, executorName string) error { return nil }
+func (db *DatabaseMock) RemoveAllMetricsByColonyName(colonyName string) error { return nil }
+func (db *DatabaseMock) RemoveAllMetrics() error { return nil }
+
 // Test utility functions
 func createFakeColoniesController() (*ColoniesController, *DatabaseMock) {
 	// Use atomic counter to get unique ports for each test to avoid "address already in use" errors

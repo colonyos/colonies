@@ -34,8 +34,8 @@ func TestChannelEndToEndIntegration(t *testing.T) {
 		Name:           "test-node",
 		Host:           "localhost",
 		APIPort:        port,
-		EtcdClientPort: 2379,
-		EtcdPeerPort:   2380,
+		EtcdClientPort: 12379,
+		EtcdPeerPort:   12380,
 		RelayPort:      25100,
 	}
 	clusterConfig := cluster.Config{
@@ -225,8 +225,8 @@ func TestChannelCleanupOnProcessFail(t *testing.T) {
 		Name:           "test-node",
 		Host:           "localhost",
 		APIPort:        port,
-		EtcdClientPort: 2379,
-		EtcdPeerPort:   2380,
+		EtcdClientPort: 12379,
+		EtcdPeerPort:   12380,
 		RelayPort:      25101,
 	}
 	clusterConfig := cluster.Config{
