@@ -39,29 +39,29 @@ func (db *EmbeddedDatabase) AddExecutor(executor *core.Executor) error {
 		return errors.New("Executor is nil")
 	}
 
-	existingExecutor, err := db.GetExecutorByName(executor.ColonyName, executor.Name)
+	db.executorMu.Lock()
+	defer db.executorMu.Unlock()
+
+	existingExecutor, err := db.getExecutorByNameInternal(executor.ColonyName, executor.Name)
 	if err != nil {
 		return err
 	}
 
 	if existingExecutor != nil {
 		if existingExecutor.State == core.UNREGISTERED {
-			// Reactivate the executor
+			// Reactivate: update the existing row in place (matches PostgreSQL behavior).
+			// Remove old indexes, delete old store entry, then add new one.
 			db.executorsIdx.byColony.Remove(existingExecutor.ID, existingExecutor.ColonyName)
 			db.executorsIdx.byName.Remove(existingExecutor.ID, existingExecutor.ColonyName+":"+existingExecutor.Name)
 			if existingExecutor.BlueprintID != "" {
 				db.executorsIdx.byBlueprint.Remove(existingExecutor.ID, existingExecutor.BlueprintID)
 			}
-			if err := db.executors.Delete(existingExecutor.ID); err != nil {
-				return err
-			}
+			db.executors.Delete(existingExecutor.ID)
 
 			executor.State = core.PENDING
 			executor.CommissionTime = time.Now()
 			cp := copyExecutor(executor)
-			if err := db.executors.Put(cp.ID, cp); err != nil {
-				return err
-			}
+			db.executors.Put(cp.ID, cp)
 
 			db.executorsIdx.byColony.Add(cp.ID, cp.ColonyName)
 			db.executorsIdx.byName.Add(cp.ID, cp.ColonyName+":"+cp.Name)
@@ -142,6 +142,7 @@ func (db *EmbeddedDatabase) GetExecutorsByColonyName(colonyName string, includeU
 }
 
 // getExecutorByNameInternal returns the stored pointer (no copy) for internal use.
+// Returns executors in any state, including UNREGISTERED (matches PostgreSQL behavior).
 func (db *EmbeddedDatabase) getExecutorByNameInternal(colonyName string, executorName string) (*core.Executor, error) {
 	ids := db.executorsIdx.byName.Lookup(colonyName + ":" + executorName)
 	if len(ids) == 0 {
@@ -209,6 +210,9 @@ func (db *EmbeddedDatabase) MarkAlive(executor *core.Executor) error {
 }
 
 func (db *EmbeddedDatabase) RemoveExecutorByName(colonyName string, executorName string) error {
+	db.executorMu.Lock()
+	defer db.executorMu.Unlock()
+
 	e, err := db.getExecutorByNameInternal(colonyName, executorName)
 	if err != nil {
 		return err
