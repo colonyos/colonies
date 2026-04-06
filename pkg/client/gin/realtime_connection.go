@@ -1,6 +1,8 @@
 package gin
 
 import (
+	"time"
+
 	"github.com/colonyos/colonies/pkg/client/backends"
 	"github.com/gorilla/websocket"
 )
@@ -27,8 +29,10 @@ func (w *WebSocketRealtimeConnection) ReadMessage() (messageType int, data []byt
 	return w.conn.ReadMessage()
 }
 
-// Close closes the WebSocket connection
+// Close sends a WebSocket close frame and then closes the connection.
 func (w *WebSocketRealtimeConnection) Close() error {
+	msg := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")
+	w.conn.WriteControl(websocket.CloseMessage, msg, time.Now().Add(time.Second))
 	return w.conn.Close()
 }
 

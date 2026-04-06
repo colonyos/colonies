@@ -93,17 +93,25 @@ func (h *RealtimeHandler) HandleWSRequest(c backends.Context) {
 	for {
 		wsMsgType, data, err := wsConn.ReadMessage()
 		if err != nil {
-			log.Error(err)
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseNormalClosure) {
+				log.WithFields(log.Fields{"Error": err}).Warning("WebSocket connection closed unexpectedly")
+			} else {
+				log.Debug("WebSocket connection closed")
+			}
 			return
 		}
 
 		rpcMsg, err := rpc.CreateRPCMsgFromJSON(string(data))
-		if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+		if err != nil {
+			log.WithFields(log.Fields{"Error": err}).Warning("Invalid RPC message on WebSocket")
+			h.sendWSErrorMsg(err, http.StatusBadRequest, wsConn, wsMsgType)
 			return
 		}
 
 		recoveredID, err := h.server.ParseSignature(rpcMsg.Payload, rpcMsg.Signature)
-		if h.server.HandleHTTPError(c, err, http.StatusForbidden) {
+		if err != nil {
+			log.WithFields(log.Fields{"Error": err}).Warning("Invalid signature on WebSocket message")
+			h.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
 			return
 		}
 

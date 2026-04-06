@@ -12,6 +12,7 @@ import (
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/go-resty/resty/v2"
 	"github.com/gorilla/websocket"
+	log "github.com/sirupsen/logrus"
 )
 
 // GinClientBackend implements HTTP/REST client backend using Gin/Resty
@@ -125,15 +126,27 @@ func (g *GinClientBackend) EstablishRealtimeConn(jsonString string) (backends.Re
 		}
 	}
 
-	wsConn, _, err := dialer.Dial(u.String(), nil)
+	log.WithFields(log.Fields{"URL": u.String(), "Insecure": g.insecure}).Debug("Establishing WebSocket connection")
+
+	wsConn, resp, err := dialer.Dial(u.String(), nil)
 	if err != nil {
+		statusCode := 0
+		if resp != nil {
+			statusCode = resp.StatusCode
+		}
+		log.WithFields(log.Fields{"URL": u.String(), "Error": err, "StatusCode": statusCode}).Debug("WebSocket dial failed")
 		return nil, err
 	}
 
+	log.WithFields(log.Fields{"URL": u.String(), "RemoteAddr": wsConn.RemoteAddr()}).Debug("WebSocket connection established")
+
 	err = wsConn.WriteMessage(websocket.TextMessage, []byte(jsonString))
 	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Debug("WebSocket write subscription message failed")
 		return nil, err
 	}
+
+	log.Debug("WebSocket subscription message sent")
 
 	return NewWebSocketRealtimeConnection(wsConn), nil
 }
