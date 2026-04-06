@@ -22,6 +22,7 @@ type Controller interface {
 	FindCancelledProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
 	CancelProcessGraph(processGraphID string) error
 	AddChild(processGraphID string, parentProcessID string, childProcessID string, process *core.Process, initiatorID string, insert bool) (*core.Process, error)
+	AddIndependentChild(processGraphID string, parentProcessID string, process *core.Process, initiatorID string) (*core.Process, error)
 }
 
 type Validator interface {
@@ -66,6 +67,9 @@ func (h *Handlers) RegisterHandlers(handlerRegistry *registry.HandlerRegistry) e
 		return err
 	}
 	if err := handlerRegistry.Register(rpc.AddChildPayloadType, h.HandleAddChild); err != nil {
+		return err
+	}
+	if err := handlerRegistry.Register(rpc.AddIndependentChildPayloadType, h.HandleAddIndependentChild); err != nil {
 		return err
 	}
 	if err := handlerRegistry.Register(rpc.CancelProcessGraphPayloadType, h.HandleCancelProcessGraph); err != nil {
@@ -394,6 +398,52 @@ func (h *Handlers) HandleAddChild(c backends.Context, recoveredID string, payloa
 		"ChildProcessID":  msg.ChildProcessID,
 		"ProcessID":       process.ID}).
 		Debug("Adding child process")
+
+	h.server.SendHTTPReply(c, payloadType, jsonString)
+}
+
+func (h *Handlers) HandleAddIndependentChild(c backends.Context, recoveredID string, payloadType string, jsonString string) {
+	msg, err := rpc.CreateAddIndependentChildMsgFromJSON(jsonString)
+	if err != nil {
+		if h.server.HandleHTTPError(c, errors.New("Failed to add independent child to processgraph, invalid JSON"), http.StatusBadRequest) {
+			return
+		}
+	}
+
+	if msg.MsgType != payloadType {
+		h.server.HandleHTTPError(c, errors.New("Failed to add independent child to processgraph, msg.MsgType does not match payloadType"), http.StatusBadRequest)
+		return
+	}
+	if msg.FunctionSpec == nil {
+		h.server.HandleHTTPError(c, errors.New("Failed to add independent child to processgraph, msg.FunctionSpec is nil"), http.StatusBadRequest)
+		return
+	}
+
+	err = h.server.Validator().RequireMembership(recoveredID, msg.FunctionSpec.Conditions.ColonyName, true)
+	if h.server.HandleHTTPError(c, err, http.StatusForbidden) {
+		return
+	}
+
+	process := core.CreateProcess(msg.FunctionSpec)
+	addedProcess, err := h.server.Controller().AddIndependentChild(msg.ProcessGraphID, msg.ParentProcessID, process, recoveredID)
+	if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+		return
+	}
+	if addedProcess == nil {
+		h.server.HandleHTTPError(c, errors.New("Failed to add independent child, addedProcess is nil"), http.StatusInternalServerError)
+		return
+	}
+
+	jsonString, err = addedProcess.ToJSON()
+	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
+		return
+	}
+
+	log.WithFields(log.Fields{
+		"ProcessGraphId":  msg.ProcessGraphID,
+		"ParentProcessID": msg.ParentProcessID,
+		"ProcessID":       process.ID}).
+		Debug("Adding independent child process")
 
 	h.server.SendHTTPReply(c, payloadType, jsonString)
 }

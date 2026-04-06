@@ -20,6 +20,7 @@ type Controller interface {
 	AddProcessToDB(process *core.Process) (*core.Process, error)
 	AddProcess(process *core.Process) (*core.Process, error)
 	AddChild(processGraphID string, parentProcessID string, childProcessID string, process *core.Process, executorID string, insert bool) (*core.Process, error)
+	AddIndependentChild(processGraphID string, parentProcessID string, process *core.Process, executorID string) (*core.Process, error)
 	UpdateProcessGraph(graph *core.ProcessGraph) error
 	CreateProcessGraph(workflowSpec *core.WorkflowSpec, args []interface{}, kwargs map[string]interface{}, rootInput []interface{}, recoveredID string) (*core.ProcessGraph, error)
 	SubmitWorkflowSpec(workflowSpec *core.WorkflowSpec, recoveredID string) (*core.ProcessGraph, error)

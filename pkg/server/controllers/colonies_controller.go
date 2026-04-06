@@ -434,6 +434,72 @@ func (controller *ColoniesController) AddChild(
 	}
 }
 
+func (controller *ColoniesController) AddIndependentChild(
+	processGraphID string,
+	parentProcessID string,
+	process *core.Process,
+	executorID string) (*core.Process, error) {
+	cmd := &command{threaded: false, processReplyChan: make(chan *core.Process, 1),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			// Independent children do NOT wait for parents — they run immediately
+			process.WaitForParents = false
+
+			parentProcess, err := controller.processDB.GetProcessByID(parentProcessID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+
+			if parentProcess.State != core.RUNNING {
+				cmd.errorChan <- errors.New("Process with Id " + parentProcessID + " is not running")
+				return
+			}
+
+			if parentProcess.AssignedExecutorID != executorID {
+				cmd.errorChan <- errors.New("Process with Id " + parentProcessID + " is not assigned to executor with Id " + executorID)
+				return
+			}
+
+			if parentProcess.ProcessGraphID == "" {
+				cmd.errorChan <- errors.New("Process with Id " + parentProcessID + " does not belong to a processgraph")
+				return
+			}
+
+			process.Parents = []string{parentProcess.ID}
+			process.ProcessGraphID = processGraphID
+			addedProcess, err := controller.AddProcessToDB(process)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+
+			// Add as child of parent (for visibility) but don't insert into dependency chain
+			parentsChildren := parentProcess.Children
+			parentsChildren = append(parentsChildren, process.ID)
+			controller.processDB.SetChildren(parentProcessID, parentsChildren)
+
+			// Signal immediately since WaitForParents is false
+			controller.eventHandler.Signal(addedProcess)
+
+			updatedProcess, err := controller.processDB.GetProcessByID(addedProcess.ID)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+
+			cmd.processReplyChan <- updatedProcess
+		}}
+
+	controller.blockingCmdQueue <- cmd
+	select {
+	case err := <-cmd.errorChan:
+		return nil, err
+	case process := <-cmd.processReplyChan:
+		return process, nil
+	}
+}
+
 func (controller *ColoniesController) UpdateProcessGraph(graph *core.ProcessGraph) error {
 	graph.SetStorage(controller.GetProcessGraphStorage())
 	return graph.UpdateProcessIDs()

@@ -107,6 +107,16 @@ func (m *MockController) AddChild(processGraphID string, parentProcessID string,
 	return m.addedProcess, nil
 }
 
+func (m *MockController) AddIndependentChild(processGraphID string, parentProcessID string, process *core.Process, initiatorID string) (*core.Process, error) {
+	if m.addChildErr != nil {
+		return nil, m.addChildErr
+	}
+	if m.returnNilChild {
+		return nil, nil
+	}
+	return m.addedProcess, nil
+}
+
 // MockValidator implements Validator interface
 type MockValidator struct {
 	membershipErr  error
@@ -882,6 +892,41 @@ func TestHandleAddChild_WithInsert(t *testing.T) {
 	handlers.HandleAddChild(ctx, "user-123", rpc.AddChildPayloadType, jsonString)
 
 	assert.Equal(t, rpc.AddChildPayloadType, server.lastPayloadType)
+}
+
+// Tests for HandleAddIndependentChild
+func TestHandleAddIndependentChild_Success(t *testing.T) {
+	server, ctx := createMockServer()
+	handlers := NewHandlers(server)
+
+	funcSpec := createTestFunctionSpec()
+	msg := rpc.CreateAddIndependentChildMsg("processgraph-123", "parent-123", funcSpec)
+	jsonString, _ := msg.ToJSON()
+
+	handlers.HandleAddIndependentChild(ctx, "user-123", rpc.AddIndependentChildPayloadType, jsonString)
+
+	assert.Equal(t, rpc.AddIndependentChildPayloadType, server.lastPayloadType)
+}
+
+func TestHandleAddIndependentChild_InvalidJSON(t *testing.T) {
+	server, ctx := createMockServer()
+	handlers := NewHandlers(server)
+
+	handlers.HandleAddIndependentChild(ctx, "user-123", rpc.AddIndependentChildPayloadType, "invalid json")
+
+	assert.Equal(t, http.StatusBadRequest, server.lastStatusCode)
+}
+
+func TestHandleAddIndependentChild_NilFunctionSpec(t *testing.T) {
+	server, ctx := createMockServer()
+	handlers := NewHandlers(server)
+
+	msg := rpc.CreateAddIndependentChildMsg("processgraph-123", "parent-123", nil)
+	jsonString, _ := msg.ToJSON()
+
+	handlers.HandleAddIndependentChild(ctx, "user-123", rpc.AddIndependentChildPayloadType, jsonString)
+
+	assert.Equal(t, http.StatusBadRequest, server.lastStatusCode)
 }
 
 // Tests for HandleGetProcessGraphs with CANCELLED state

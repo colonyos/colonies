@@ -65,6 +65,10 @@ func (v *ControllerMock) AddChild(processGraphID string, parentProcessID string,
 	return nil, nil
 }
 
+func (v *ControllerMock) AddIndependentChild(processGraphID string, parentProcessID string, process *core.Process, executorID string) (*core.Process, error) {
+	return nil, nil
+}
+
 func (v *ControllerMock) UpdateProcessGraph(graph *core.ProcessGraph) error {
 	return nil
 }

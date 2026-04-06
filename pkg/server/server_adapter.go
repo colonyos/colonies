@@ -385,6 +385,7 @@ type processgraphControllerAdapter struct {
 		FindCancelledProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
 		CancelProcessGraph(processGraphID string) error
 		AddChild(processGraphID string, parentProcessID string, childProcessID string, process *core.Process, initiatorID string, insert bool) (*core.Process, error)
+		AddIndependentChild(processGraphID string, parentProcessID string, process *core.Process, initiatorID string) (*core.Process, error)
 	}
 }
 
@@ -422,6 +423,10 @@ func (c *processgraphControllerAdapter) CancelProcessGraph(processGraphID string
 
 func (c *processgraphControllerAdapter) AddChild(processGraphID string, parentProcessID string, childProcessID string, process *core.Process, initiatorID string, insert bool) (*core.Process, error) {
 	return c.controller.AddChild(processGraphID, parentProcessID, childProcessID, process, initiatorID, insert)
+}
+
+func (c *processgraphControllerAdapter) AddIndependentChild(processGraphID string, parentProcessID string, process *core.Process, initiatorID string) (*core.Process, error) {
+	return c.controller.AddIndependentChild(processGraphID, parentProcessID, process, initiatorID)
 }
 
 func (s *ServerAdapter) ProcessgraphController() processgraph.Controller {

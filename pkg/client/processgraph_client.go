@@ -37,6 +37,21 @@ func (client *ColoniesClient) AddChild(processGraphID string, parentProcessID st
 	return core.ConvertJSONToProcess(respBodyString)
 }
 
+func (client *ColoniesClient) AddIndependentChild(processGraphID string, parentProcessID string, funcSpec *core.FunctionSpec, prvKey string) (*core.Process, error) {
+	msg := rpc.CreateAddIndependentChildMsg(processGraphID, parentProcessID, funcSpec)
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	respBodyString, err := client.sendMessage(rpc.AddIndependentChildPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return nil, err
+	}
+
+	return core.ConvertJSONToProcess(respBodyString)
+}
+
 func (client *ColoniesClient) GetProcessGraph(processGraphID string, prvKey string) (*core.ProcessGraph, error) {
 	msg := rpc.CreateGetProcessGraphMsg(processGraphID)
 	jsonString, err := msg.ToJSON()
