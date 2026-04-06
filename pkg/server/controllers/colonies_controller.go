@@ -377,9 +377,28 @@ func (controller *ColoniesController) AddChild(
 
 			if insert {
 				parentsChildren := parentProcess.Children
-				controller.processDB.SetChildren(process.ID, parentsChildren)
-				controller.processDB.SetChildren(parentProcessID, []string{process.ID})
-				for _, parentsChildID := range parentsChildren {
+				// Separate independent children — they should NOT be reparented
+				var dependentChildren []string
+				var independentChildren []string
+				for _, childID := range parentsChildren {
+					child, err := controller.processDB.GetProcessByID(childID)
+					if err != nil {
+						cmd.errorChan <- err
+						return
+					}
+					if child.Independent {
+						independentChildren = append(independentChildren, childID)
+					} else {
+						dependentChildren = append(dependentChildren, childID)
+					}
+				}
+				// New node takes over dependent children only
+				controller.processDB.SetChildren(process.ID, dependentChildren)
+				// Parent keeps the new node + independent children
+				newParentChildren := append([]string{process.ID}, independentChildren...)
+				controller.processDB.SetChildren(parentProcessID, newParentChildren)
+				// Reparent only dependent children
+				for _, parentsChildID := range dependentChildren {
 					parentChild, err := controller.processDB.GetProcessByID(parentsChildID)
 					if err != nil {
 						cmd.errorChan <- err
@@ -444,6 +463,7 @@ func (controller *ColoniesController) AddIndependentChild(
 		handler: func(cmd *command) {
 			// Independent children do NOT wait for parents — they run immediately
 			process.WaitForParents = false
+			process.Independent = true
 
 			parentProcess, err := controller.processDB.GetProcessByID(parentProcessID)
 			if err != nil {

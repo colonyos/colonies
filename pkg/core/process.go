@@ -36,6 +36,7 @@ type Process struct {
 	Attributes         []Attribute   `json:"attributes"`
 	FunctionSpec       FunctionSpec  `json:"spec"`
 	WaitForParents     bool          `json:"waitforparents"`
+	Independent        bool          `json:"independent"`
 	Parents            []string      `json:"parents"`
 	Children           []string      `json:"children"`
 	ProcessGraphID     string        `json:"processgraphid"`
@@ -161,6 +162,7 @@ func (process *Process) Equals(process2 *Process) bool {
 		process.ExecDeadline.Unix() != process2.ExecDeadline.Unix() ||
 		process.Retries != process2.Retries ||
 		process.WaitForParents != process2.WaitForParents ||
+		process.Independent != process2.Independent ||
 		process.ProcessGraphID != process2.ProcessGraphID {
 		same = false
 	}
