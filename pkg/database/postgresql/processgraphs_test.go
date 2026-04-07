@@ -593,3 +593,67 @@ func TestFindCancelledProcessGraphs(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 5, count)
 }
+
+func TestProcessGraphRootFunc(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+	defer db.Close()
+
+	colonyName := core.GenerateRandomID()
+
+	graph := generateProcessGraph(t, db, colonyName)
+	graph.RootFunc = "exec_query"
+	err = db.AddProcessGraph(graph)
+	assert.Nil(t, err)
+
+	got, err := db.GetProcessGraphByID(graph.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, "exec_query", got.RootFunc)
+}
+
+func TestFindProcessGraphsByStateWithExcludeRootFuncs(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+	defer db.Close()
+
+	colonyName := core.GenerateRandomID()
+
+	// Create 3 graphs with different root funcs
+	g1 := generateProcessGraph(t, db, colonyName)
+	g1.RootFunc = "exec_query"
+	err = db.AddProcessGraph(g1)
+	assert.Nil(t, err)
+
+	g2 := generateProcessGraph(t, db, colonyName)
+	g2.RootFunc = "exec_generate_titles"
+	err = db.AddProcessGraph(g2)
+	assert.Nil(t, err)
+
+	g3 := generateProcessGraph(t, db, colonyName)
+	g3.RootFunc = "exec_query"
+	err = db.AddProcessGraph(g3)
+	assert.Nil(t, err)
+
+	// Without exclude — should return all 3
+	all, err := db.FindProcessGraphsByState(colonyName, core.WAITING, 100, nil)
+	assert.Nil(t, err)
+	assert.Len(t, all, 3)
+
+	// With exclude — should filter out exec_generate_titles
+	filtered, err := db.FindProcessGraphsByState(colonyName, core.WAITING, 100, []string{"exec_generate_titles"})
+	assert.Nil(t, err)
+	assert.Len(t, filtered, 2)
+	for _, g := range filtered {
+		assert.NotEqual(t, "exec_generate_titles", g.RootFunc)
+	}
+
+	// Exclude multiple
+	filtered2, err := db.FindProcessGraphsByState(colonyName, core.WAITING, 100, []string{"exec_generate_titles", "exec_query"})
+	assert.Nil(t, err)
+	assert.Len(t, filtered2, 0)
+
+	// Empty exclude list — same as no filtering
+	all2, err := db.FindProcessGraphsByState(colonyName, core.WAITING, 100, []string{})
+	assert.Nil(t, err)
+	assert.Len(t, all2, 3)
+}

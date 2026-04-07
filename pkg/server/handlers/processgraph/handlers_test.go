@@ -1165,3 +1165,42 @@ func TestRemoveRunningProcessGraph(t *testing.T) {
 	coloniesServer.Shutdown()
 	<-done
 }
+
+func TestGetProcessGraphsByStateWithExcludeRootFuncs(t *testing.T) {
+	env, client, coloniesServer, _, done := server.SetupTestEnv2(t)
+
+	// Submit two workflows
+	wf1 := server.GenerateDiamondtWorkflowSpec(env.ColonyName)
+	graph1, err := client.SubmitWorkflowSpec(wf1, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, graph1)
+
+	wf2 := server.GenerateDiamondtWorkflowSpec(env.ColonyName)
+	graph2, err := client.SubmitWorkflowSpec(wf2, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.NotNil(t, graph2)
+
+	// Both should appear without filtering
+	allGraphs, err := client.GetProcessGraphsByState(env.ColonyName, core.WAITING, 100, nil, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, allGraphs, 2)
+
+	// Get the root func name from the first graph
+	g1, err := client.GetProcessGraph(graph1.ID, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	rootFunc := g1.RootFunc
+	assert.NotEmpty(t, rootFunc)
+
+	// Exclude that root func — both workflows have the same root func, so 0 results
+	filtered, err := client.GetProcessGraphsByState(env.ColonyName, core.WAITING, 100, []string{rootFunc}, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, filtered, 0)
+
+	// Excluding a different func should return both
+	filtered2, err := client.GetProcessGraphsByState(env.ColonyName, core.WAITING, 100, []string{"nonexistent_func"}, env.ExecutorPrvKey)
+	assert.Nil(t, err)
+	assert.Len(t, filtered2, 2)
+
+	coloniesServer.Shutdown()
+	<-done
+}

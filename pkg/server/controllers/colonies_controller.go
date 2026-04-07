@@ -583,7 +583,11 @@ func (controller *ColoniesController) CreateProcessGraph(workflowSpec *core.Work
 			processgraph.AddRoot(process.ID)
 				// Store root function name for filtering
 				if processgraph.RootFunc == "" {
-					processgraph.RootFunc = funcSpec.FuncName
+					if funcSpec.FuncName != "" {
+						processgraph.RootFunc = funcSpec.FuncName
+					} else if funcSpec.NodeName != "" {
+						processgraph.RootFunc = funcSpec.NodeName
+					}
 				}
 			} else {
 			// The process has to wait for its parents

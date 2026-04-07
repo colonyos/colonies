@@ -2228,6 +2228,50 @@ func TestFindProcessGraphsByState(t *testing.T) {
 	assert.Len(t, running, 1)
 }
 
+func TestFindProcessGraphsByStateWithExcludeRootFuncs(t *testing.T) {
+	db := setupTestDB(t)
+
+	g1, _ := core.CreateProcessGraph("c1")
+	g1.RootFunc = "exec_query"
+	g2, _ := core.CreateProcessGraph("c1")
+	g2.RootFunc = "exec_generate_titles"
+	g3, _ := core.CreateProcessGraph("c1")
+	g3.RootFunc = "exec_query"
+	db.AddProcessGraph(g1)
+	db.AddProcessGraph(g2)
+	db.AddProcessGraph(g3)
+
+	// Without exclude — should return all 3
+	all, err := db.FindProcessGraphsByState("c1", core.WAITING, 10, nil)
+	assert.NoError(t, err)
+	assert.Len(t, all, 3)
+
+	// With exclude — should filter out exec_generate_titles
+	filtered, err := db.FindProcessGraphsByState("c1", core.WAITING, 10, []string{"exec_generate_titles"})
+	assert.NoError(t, err)
+	assert.Len(t, filtered, 2)
+	for _, g := range filtered {
+		assert.NotEqual(t, "exec_generate_titles", g.RootFunc)
+	}
+
+	// Exclude multiple
+	filtered2, err := db.FindProcessGraphsByState("c1", core.WAITING, 10, []string{"exec_generate_titles", "exec_query"})
+	assert.NoError(t, err)
+	assert.Len(t, filtered2, 0)
+}
+
+func TestProcessGraphRootFuncPersistence(t *testing.T) {
+	db := setupTestDB(t)
+
+	graph, _ := core.CreateProcessGraph("c1")
+	graph.RootFunc = "exec_query"
+	db.AddProcessGraph(graph)
+
+	got, err := db.GetProcessGraphByID(graph.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, "exec_query", got.RootFunc)
+}
+
 func TestRemoveProcessGraphByID(t *testing.T) {
 	db := setupTestDB(t)
 

@@ -15,22 +15,25 @@ import (
 
 // MockController implements Controller interface
 type MockController struct {
-	submitErr          error
-	getByIDErr         error
-	findWaitingErr     error
-	findRunningErr     error
-	findSuccessErr     error
-	findFailedErr      error
-	findCancelledErr   error
-	cancelGraphErr     error
-	removeErr          error
-	removeAllErr       error
-	addChildErr        error
-	processGraph       *core.ProcessGraph
-	processGraphs      []*core.ProcessGraph
-	addedProcess       *core.Process
-	returnNil          bool
-	returnNilChild     bool
+	submitErr              error
+	getByIDErr             error
+	findWaitingErr         error
+	findRunningErr         error
+	findSuccessErr         error
+	findFailedErr          error
+	findCancelledErr       error
+	cancelGraphErr         error
+	removeErr              error
+	removeAllErr           error
+	addChildErr            error
+	processGraph           *core.ProcessGraph
+	processGraphs          []*core.ProcessGraph
+	addedProcess           *core.Process
+	returnNil              bool
+	returnNilChild         bool
+	lastExcludeRootFuncs   []string
+	lastFindByStateState   int
+	findByStateCalled      bool
 }
 
 func (m *MockController) SubmitWorkflowSpec(workflowSpec *core.WorkflowSpec, initiatorID string) (*core.ProcessGraph, error) {
@@ -51,6 +54,9 @@ func (m *MockController) GetProcessGraphByID(processGraphID string) (*core.Proce
 }
 
 func (m *MockController) FindProcessGraphsByState(colonyName string, state int, count int, excludeRootFuncs []string) ([]*core.ProcessGraph, error) {
+	m.findByStateCalled = true
+	m.lastFindByStateState = state
+	m.lastExcludeRootFuncs = excludeRootFuncs
 	return m.processGraphs, nil
 }
 
@@ -934,6 +940,39 @@ func TestHandleAddIndependentChild_NilFunctionSpec(t *testing.T) {
 	handlers.HandleAddIndependentChild(ctx, "user-123", rpc.AddIndependentChildPayloadType, jsonString)
 
 	assert.Equal(t, http.StatusBadRequest, server.lastStatusCode)
+}
+
+// Tests for HandleGetProcessGraphs with ExcludeRootFuncs
+func TestHandleGetProcessGraphs_WithExcludeRootFuncs(t *testing.T) {
+	server, ctx := createMockServer()
+	handlers := NewHandlers(server)
+
+	msg := rpc.CreateGetProcessGraphsMsg("test-colony", 10, core.SUCCESS)
+	msg.ExcludeRootFuncs = []string{"exec_generate_titles"}
+	jsonString, _ := msg.ToJSON()
+
+	handlers.HandleGetProcessGraphs(ctx, "user-123", rpc.GetProcessGraphsPayloadType, jsonString)
+
+	assert.Equal(t, rpc.GetProcessGraphsPayloadType, server.lastPayloadType)
+	// Verify it routed to FindProcessGraphsByState with the exclude funcs
+	assert.True(t, server.controller.findByStateCalled)
+	assert.Equal(t, core.SUCCESS, server.controller.lastFindByStateState)
+	assert.Equal(t, []string{"exec_generate_titles"}, server.controller.lastExcludeRootFuncs)
+}
+
+func TestHandleGetProcessGraphs_WithoutExcludeRootFuncs_UsesLegacy(t *testing.T) {
+	server, ctx := createMockServer()
+	handlers := NewHandlers(server)
+
+	msg := rpc.CreateGetProcessGraphsMsg("test-colony", 10, core.SUCCESS)
+	// No ExcludeRootFuncs set
+	jsonString, _ := msg.ToJSON()
+
+	handlers.HandleGetProcessGraphs(ctx, "user-123", rpc.GetProcessGraphsPayloadType, jsonString)
+
+	assert.Equal(t, rpc.GetProcessGraphsPayloadType, server.lastPayloadType)
+	// Should NOT have called FindProcessGraphsByState
+	assert.False(t, server.controller.findByStateCalled)
 }
 
 // Tests for HandleGetProcessGraphs with CANCELLED state
