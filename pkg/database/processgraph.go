@@ -11,6 +11,7 @@ type ProcessGraphDatabase interface {
 	FindSuccessfulProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
 	FindFailedProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
 	FindCancelledProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
+	FindProcessGraphsByState(colonyName string, state int, count int, excludeRootFuncs []string) ([]*core.ProcessGraph, error)
 	RemoveProcessGraphByID(processGraphID string) error
 	RemoveAllProcessGraphsByColonyName(colonyName string) error
 	RemoveAllWaitingProcessGraphsByColonyName(colonyName string) error

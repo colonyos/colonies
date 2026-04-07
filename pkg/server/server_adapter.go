@@ -378,6 +378,7 @@ type processgraphControllerAdapter struct {
 	controller interface {
 		SubmitWorkflowSpec(workflowSpec *core.WorkflowSpec, initiatorID string) (*core.ProcessGraph, error)
 		GetProcessGraphByID(processGraphID string) (*core.ProcessGraph, error)
+		FindProcessGraphsByState(colonyName string, state int, count int, excludeRootFuncs []string) ([]*core.ProcessGraph, error)
 		FindWaitingProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
 		FindRunningProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
 		FindSuccessfulProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
@@ -387,6 +388,10 @@ type processgraphControllerAdapter struct {
 		AddChild(processGraphID string, parentProcessID string, childProcessID string, process *core.Process, initiatorID string, insert bool) (*core.Process, error)
 		AddIndependentChild(processGraphID string, parentProcessID string, process *core.Process, initiatorID string) (*core.Process, error)
 	}
+}
+
+func (c *processgraphControllerAdapter) FindProcessGraphsByState(colonyName string, state int, count int, excludeRootFuncs []string) ([]*core.ProcessGraph, error) {
+	return c.controller.FindProcessGraphsByState(colonyName, state, count, excludeRootFuncs)
 }
 
 func (c *processgraphControllerAdapter) SubmitWorkflowSpec(workflowSpec *core.WorkflowSpec, initiatorID string) (*core.ProcessGraph, error) {

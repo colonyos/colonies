@@ -53,6 +53,7 @@ type ProcessGraph struct {
 	InitiatorName  string    `json:"initiatorname"`
 	ColonyName     string    `json:"colonyname"`
 	Roots          []string  `json:"rootprocessids"`
+	RootFunc       string    `json:"rootfunc"`
 	State          int       `json:"state"`
 	SubmissionTime time.Time `json:"submissiontime"`
 	StartTime      time.Time `json:"starttime"`

@@ -581,7 +581,11 @@ func (controller *ColoniesController) CreateProcessGraph(workflowSpec *core.Work
 			}
 
 			processgraph.AddRoot(process.ID)
-		} else {
+				// Store root function name for filtering
+				if processgraph.RootFunc == "" {
+					processgraph.RootFunc = funcSpec.FuncName
+				}
+			} else {
 			// The process has to wait for its parents
 			process.WaitForParents = true
 		}
@@ -697,6 +701,39 @@ func (controller *ColoniesController) GetProcessGraphByID(processGraphID string)
 		return nil, err
 	case graph := <-cmd.processGraphReplyChan:
 		return graph, nil
+	}
+}
+
+func (controller *ColoniesController) FindProcessGraphsByState(colonyName string, state int, count int, excludeRootFuncs []string) ([]*core.ProcessGraph, error) {
+	cmd := &command{threaded: true, processGraphsReplyChan: make(chan []*core.ProcessGraph),
+		errorChan: make(chan error, 1),
+		handler: func(cmd *command) {
+			if count > constants.MAX_COUNT {
+				cmd.errorChan <- errors.New("Count is larger than MaxCount limit <" + strconv.Itoa(constants.MAX_COUNT) + ">")
+				return
+			}
+			graphs, err := controller.processGraphDB.FindProcessGraphsByState(colonyName, state, count, excludeRootFuncs)
+			if err != nil {
+				cmd.errorChan <- err
+				return
+			}
+			for _, graph := range graphs {
+				err = controller.UpdateProcessGraph(graph)
+				if err != nil {
+					cmd.errorChan <- err
+					return
+				}
+			}
+			cmd.processGraphsReplyChan <- graphs
+		}}
+
+	controller.cmdQueue <- cmd
+	var graphs []*core.ProcessGraph
+	select {
+	case err := <-cmd.errorChan:
+		return graphs, err
+	case graphs := <-cmd.processGraphsReplyChan:
+		return graphs, nil
 	}
 }
 

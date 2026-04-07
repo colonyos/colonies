@@ -82,6 +82,20 @@ func (client *ColoniesClient) getProcessGraphs(state int, colonyName string, cou
 	return core.ConvertJSONToProcessGraphArray(respBodyString)
 }
 
+func (client *ColoniesClient) GetProcessGraphsByState(colonyName string, state int, count int, excludeRootFuncs []string, prvKey string) ([]*core.ProcessGraph, error) {
+	msg := rpc.CreateGetProcessGraphsMsg(colonyName, count, state)
+	msg.ExcludeRootFuncs = excludeRootFuncs
+	jsonString, err := msg.ToJSON()
+	if err != nil {
+		return nil, err
+	}
+	respBodyString, err := client.sendMessage(rpc.GetProcessGraphsPayloadType, jsonString, prvKey, false, context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	return core.ConvertJSONToProcessGraphArray(respBodyString)
+}
+
 func (client *ColoniesClient) GetWaitingProcessGraphs(colonyName string, count int, prvKey string) ([]*core.ProcessGraph, error) {
 	return client.getProcessGraphs(core.WAITING, colonyName, count, prvKey)
 }

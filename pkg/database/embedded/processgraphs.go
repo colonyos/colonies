@@ -109,6 +109,29 @@ func (db *EmbeddedDatabase) findProcessGraphsByState(colonyName string, state in
 	return result, nil
 }
 
+func (db *EmbeddedDatabase) FindProcessGraphsByState(colonyName string, state int, count int, excludeRootFuncs []string) ([]*core.ProcessGraph, error) {
+	if len(excludeRootFuncs) == 0 {
+		return db.findProcessGraphsByState(colonyName, state, count)
+	}
+	exclude := make(map[string]bool)
+	for _, f := range excludeRootFuncs {
+		exclude[f] = true
+	}
+	var result []*core.ProcessGraph
+	db.processGraphsIdx.byColony.DescendFirst(colonyName, state, count+100, func(entry index.IndexEntry[string]) bool {
+		if len(result) >= count {
+			return false
+		}
+		if g, ok := db.processGraphs.Get(entry.PrimaryKey); ok {
+			if !exclude[g.RootFunc] {
+				result = append(result, copyProcessGraph(g))
+			}
+		}
+		return true
+	})
+	return result, nil
+}
+
 func (db *EmbeddedDatabase) FindWaitingProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
 	return db.findProcessGraphsByState(colonyName, core.WAITING, count)
 }

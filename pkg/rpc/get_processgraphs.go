@@ -7,10 +7,11 @@ import (
 const GetProcessGraphsPayloadType = "getprocessgraphsmsg"
 
 type GetProcessGraphsMsg struct {
-	ColonyName string `json:"colonyname"`
-	Count      int    `json:"count"`
-	State      int    `json:"state"`
-	MsgType    string `json:"msgtype"`
+	ColonyName       string   `json:"colonyname"`
+	Count            int      `json:"count"`
+	State            int      `json:"state"`
+	ExcludeRootFuncs []string `json:"excluderootfuncs,omitempty"`
+	MsgType          string   `json:"msgtype"`
 }
 
 func CreateGetProcessGraphsMsg(colonyName string, count int, state int) *GetProcessGraphsMsg {

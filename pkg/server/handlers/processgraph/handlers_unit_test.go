@@ -50,6 +50,10 @@ func (m *MockController) GetProcessGraphByID(processGraphID string) (*core.Proce
 	return m.processGraph, nil
 }
 
+func (m *MockController) FindProcessGraphsByState(colonyName string, state int, count int, excludeRootFuncs []string) ([]*core.ProcessGraph, error) {
+	return m.processGraphs, nil
+}
+
 func (m *MockController) FindWaitingProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {
 	if m.findWaitingErr != nil {
 		return nil, m.findWaitingErr
@@ -186,6 +190,9 @@ type MockProcessGraphDB struct {
 
 func (m *MockProcessGraphDB) AddProcessGraph(pg *core.ProcessGraph) error { return nil }
 func (m *MockProcessGraphDB) GetProcessGraphByID(id string) (*core.ProcessGraph, error) {
+	return nil, nil
+}
+func (m *MockProcessGraphDB) FindProcessGraphsByState(colonyName string, state int, count int, excludeRootFuncs []string) ([]*core.ProcessGraph, error) {
 	return nil, nil
 }
 func (m *MockProcessGraphDB) FindWaitingProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {

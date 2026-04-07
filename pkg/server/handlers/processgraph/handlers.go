@@ -15,6 +15,7 @@ import (
 type Controller interface {
 	SubmitWorkflowSpec(workflowSpec *core.WorkflowSpec, initiatorID string) (*core.ProcessGraph, error)
 	GetProcessGraphByID(processGraphID string) (*core.ProcessGraph, error)
+	FindProcessGraphsByState(colonyName string, state int, count int, excludeRootFuncs []string) ([]*core.ProcessGraph, error)
 	FindWaitingProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
 	FindRunningProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
 	FindSuccessfulProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error)
@@ -170,6 +171,20 @@ func (h *Handlers) HandleGetProcessGraphs(c backends.Context, recoveredID string
 	}
 
 	log.WithFields(log.Fields{"ColonyId": msg.ColonyName}).Debug("Getting processgraphs")
+
+	// If excludeRootFuncs is set, use the filtered query for any state
+	if len(msg.ExcludeRootFuncs) > 0 {
+		graphs, err := h.server.Controller().FindProcessGraphsByState(msg.ColonyName, msg.State, msg.Count, msg.ExcludeRootFuncs)
+		if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+			return
+		}
+		jsonString, err := core.ConvertProcessGraphArrayToJSON(graphs)
+		if h.server.HandleHTTPError(c, err, http.StatusBadRequest) {
+			return
+		}
+		h.server.SendHTTPReply(c, payloadType, jsonString)
+		return
+	}
 
 	switch msg.State {
 	case core.WAITING:

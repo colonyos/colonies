@@ -9,8 +9,8 @@ import (
 )
 
 func (db *PQDatabase) AddProcessGraph(processGraph *core.ProcessGraph) error {
-	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSGRAPHS (PROCESSGRAPH_ID, TARGET_COLONY_NAME, ROOTS, STATE, SUBMISSION_TIME, START_TIME, END_TIME, INITIATOR_ID, INITIATOR_NAME) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
-	_, err := db.postgresql.Exec(sqlStatement, processGraph.ID, processGraph.ColonyName, pq.Array(processGraph.Roots), processGraph.State, time.Now(), time.Time{}, time.Time{}, processGraph.InitiatorID, processGraph.InitiatorName)
+	sqlStatement := `INSERT INTO  ` + db.dbPrefix + `PROCESSGRAPHS (PROCESSGRAPH_ID, TARGET_COLONY_NAME, ROOTS, ROOT_FUNC, STATE, SUBMISSION_TIME, START_TIME, END_TIME, INITIATOR_ID, INITIATOR_NAME) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
+	_, err := db.postgresql.Exec(sqlStatement, processGraph.ID, processGraph.ColonyName, pq.Array(processGraph.Roots), processGraph.RootFunc, processGraph.State, time.Now(), time.Time{}, time.Time{}, processGraph.InitiatorID, processGraph.InitiatorName)
 	if err != nil {
 		return err
 	}
@@ -25,6 +25,7 @@ func (db *PQDatabase) parseProcessGraphs(rows *sql.Rows) ([]*core.ProcessGraph, 
 		var processGraphID string
 		var colonyName string
 		var roots []string
+		var rootFunc string
 		var state int
 		var submissionTime time.Time
 		var startTime time.Time
@@ -32,7 +33,7 @@ func (db *PQDatabase) parseProcessGraphs(rows *sql.Rows) ([]*core.ProcessGraph, 
 		var initiatorID string
 		var initiatorName string
 
-		if err := rows.Scan(&processGraphID, &colonyName, pq.Array(&roots), &state, &submissionTime, &startTime, &endTime, &initiatorID, &initiatorName); err != nil {
+		if err := rows.Scan(&processGraphID, &colonyName, pq.Array(&roots), &rootFunc, &state, &submissionTime, &startTime, &endTime, &initiatorID, &initiatorName); err != nil {
 			return nil, err
 		}
 
@@ -49,6 +50,7 @@ func (db *PQDatabase) parseProcessGraphs(rows *sql.Rows) ([]*core.ProcessGraph, 
 		graph.EndTime = endTime
 		graph.InitiatorID = initiatorID
 		graph.InitiatorName = initiatorName
+		graph.RootFunc = rootFunc
 
 		for _, root := range roots {
 			graph.AddRoot(root)
@@ -125,6 +127,19 @@ func (db *PQDatabase) findProcessGraphsByState(colonyName string, state int, cou
 	}
 
 	return matches, nil
+}
+
+func (db *PQDatabase) FindProcessGraphsByState(colonyName string, state int, count int, excludeRootFuncs []string) ([]*core.ProcessGraph, error) {
+	if len(excludeRootFuncs) > 0 {
+		sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSGRAPHS WHERE TARGET_COLONY_NAME=$1 AND STATE=$2 AND ROOT_FUNC != ALL($3) ORDER BY SUBMISSION_TIME DESC LIMIT $4`
+		rows, err := db.postgresql.Query(sqlStatement, colonyName, state, pq.Array(excludeRootFuncs), count)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		return db.parseProcessGraphs(rows)
+	}
+	return db.findProcessGraphsByState(colonyName, state, count)
 }
 
 func (db *PQDatabase) FindWaitingProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) {

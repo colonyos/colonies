@@ -61,6 +61,10 @@ func (v *ControllerMock) AddProcess(process *core.Process) (*core.Process, error
 	return nil, nil
 }
 
+func (v *ControllerMock) FindProcessGraphsByState(colonyName string, state int, count int, excludeRootFuncs []string) ([]*core.ProcessGraph, error) {
+	return v.processGraphs, nil
+}
+
 func (v *ControllerMock) AddChild(processGraphID string, parentProcessID string, childProcessID string, process *core.Process, executorID string, insert bool) (*core.Process, error) {
 	return nil, nil
 }
