@@ -224,7 +224,10 @@ func (controller *ColoniesController) StartCron(cron *core.Cron) {
 
 	processGraph, err := controller.CreateProcessGraph(workflowSpec, make([]interface{}, 0), make(map[string]interface{}), rootInput, cron.InitiatorID)
 	if err != nil {
-		log.WithFields(log.Fields{"Error": err, "CronId": cron.ID}).Error("Failed to create cron processgraph")
+		log.WithFields(log.Fields{"Error": err, "CronId": cron.ID, "CronName": cron.Name}).Error("Failed to create cron processgraph")
+		// Advance NextRun even on failure to prevent the cron from being stuck
+		nextRun := controller.CalcNextRun(cron)
+		controller.cronDB.UpdateCron(cron.ID, nextRun, time.Now(), cron.PrevProcessGraphID)
 		return
 	}
 

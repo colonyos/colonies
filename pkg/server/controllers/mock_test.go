@@ -21,8 +21,9 @@ var portCounter int32 = 0
 
 // ControllerMock implements the Controller interface for testing
 type ControllerMock struct {
-	ReturnError string
-	ReturnValue string
+	ReturnError    string
+	ReturnValue    string
+	processGraphs  []*core.ProcessGraph
 }
 
 func (v *ControllerMock) GetCronPeriod() int {
@@ -466,6 +467,7 @@ func (db *DatabaseMock) FindWaitingProcessGraphs(colonyName string, count int) (
 func (db *DatabaseMock) FindRunningProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) { return nil, nil }
 func (db *DatabaseMock) FindSuccessfulProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) { return nil, nil }
 func (db *DatabaseMock) FindFailedProcessGraphs(colonyName string, count int) ([]*core.ProcessGraph, error) { return nil, nil }
+func (db *DatabaseMock) FindProcessGraphsByState(colonyName string, state int, count int, excludeRootFuncs []string) ([]*core.ProcessGraph, error) { return nil, nil }
 func (db *DatabaseMock) RemoveProcessGraphByID(processGraphID string) error { return nil }
 func (db *DatabaseMock) RemoveAllProcessGraphsByColonyName(colonyName string) error { return nil }
 func (db *DatabaseMock) RemoveAllWaitingProcessGraphsByColonyName(colonyName string) error { return nil }

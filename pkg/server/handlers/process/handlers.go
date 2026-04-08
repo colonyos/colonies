@@ -42,17 +42,20 @@ func resolveInitiator(
 
 	if executor != nil {
 		return executor.Name, nil
-	} else {
-		user, err := userDB.GetUserByID(colonyName, recoveredID)
-		if err != nil {
-			return "", err
-		}
-		if user != nil {
-			return user.Name, nil
-		} else {
-			return "", errors.New("Could not derive InitiatorName")
-		}
 	}
+
+	user, err := userDB.GetUserByID(colonyName, recoveredID)
+	if err != nil {
+		return "", err
+	}
+	if user != nil {
+		return user.Name, nil
+	}
+
+	// Executor or user no longer exists (e.g., executor re-registered with
+	// a new ID). Return the raw ID as the initiator name rather than failing.
+	log.WithFields(log.Fields{"RecoveredID": recoveredID, "ColonyName": colonyName}).Debug("Could not resolve initiator name, using ID as fallback")
+	return recoveredID, nil
 }
 
 type Leader struct {

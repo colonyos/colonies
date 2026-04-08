@@ -448,6 +448,203 @@ func TestColoniesControllerCronOperations(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+// TestCronStartAdvancesNextRunOnFailure verifies that StartCron advances NextRun
+// even when CreateProcessGraph fails. Before the fix, a cron with an invalid
+// workflow spec (or any transient failure) would get stuck forever because
+// NextRun was never updated on error.
+func TestCronStartAdvancesNextRunOnFailure(t *testing.T) {
+	db, err := prepareTestDB("TEST_CRON_STUCK_")
+	assert.Nil(t, err)
+	defer db.Close()
+
+	controller := createTestColoniesController(db)
+	defer controller.Stop()
+
+	colonyName := core.GenerateRandomID()
+
+	// Create a cron with an invalid workflow spec that will cause CreateProcessGraph to fail.
+	// An empty FunctionSpecs array triggers a "no function specs" error.
+	invalidWorkflowSpec := core.CreateWorkflowSpec(colonyName)
+	// No function specs added -- this will cause CreateProcessGraph to fail
+	workflowJSON, err := invalidWorkflowSpec.ToJSON()
+	assert.Nil(t, err)
+
+	cronID := core.GenerateRandomID()
+	cron := &core.Cron{
+		ID:                      cronID,
+		ColonyName:              colonyName,
+		Name:                    "stuck-cron",
+		Interval:                60,
+		NextRun:                 time.Now().Add(-10 * time.Second), // already expired
+		LastRun:                 time.Now().Add(-70 * time.Second),
+		WorkflowSpec:            workflowJSON,
+		WaitForPrevProcessGraph: false,
+		PrevProcessGraphID:      "",
+		InitiatorID:             core.GenerateRandomID(),
+	}
+
+	err = db.AddCron(cron)
+	assert.Nil(t, err)
+
+	// Verify the cron is expired
+	savedCron, err := db.GetCronByID(cronID)
+	assert.Nil(t, err)
+	assert.True(t, savedCron.HasExpired())
+
+	oldNextRun := savedCron.NextRun
+
+	// Call StartCron -- this will fail because the workflow spec has no function specs
+	controller.StartCron(savedCron)
+
+	// Verify NextRun was advanced despite the failure
+	updatedCron, err := db.GetCronByID(cronID)
+	assert.Nil(t, err)
+	assert.True(t, updatedCron.NextRun.After(oldNextRun), "NextRun should have been advanced even though CreateProcessGraph failed, was %v now %v", oldNextRun, updatedCron.NextRun)
+
+	// Verify LastRun was updated
+	assert.True(t, updatedCron.LastRun.After(savedCron.LastRun), "LastRun should have been updated")
+}
+
+// TestCronStartWorksAfterExecutorReregistration verifies that a cron continues
+// to work after the executor that created it has been re-registered with a new ID.
+// Before the fix, resolveInitiator would fail with "Could not derive InitiatorName"
+// because the original executor ID no longer existed in the database.
+func TestCronStartWorksAfterExecutorReregistration(t *testing.T) {
+	db, err := prepareTestDB("TEST_CRON_REREG_")
+	assert.Nil(t, err)
+	defer db.Close()
+
+	controller := createTestColoniesController(db)
+	defer controller.Stop()
+
+	colonyName := core.GenerateRandomID()
+
+	// Create colony
+	colony := core.CreateColony(core.GenerateRandomID(), colonyName)
+	err = db.AddColony(colony)
+	assert.Nil(t, err)
+
+	// Register executor with ID "A"
+	executorA := utils.CreateTestExecutor(colonyName)
+	err = db.AddExecutor(executorA)
+	assert.Nil(t, err)
+	err = db.ApproveExecutor(executorA)
+	assert.Nil(t, err)
+
+	// Create a valid workflow spec
+	workflowSpec := core.CreateWorkflowSpec(colonyName)
+	funcSpec := utils.CreateTestFunctionSpec(colonyName)
+	workflowSpec.AddFunctionSpec(funcSpec)
+	workflowJSON, err := workflowSpec.ToJSON()
+	assert.Nil(t, err)
+
+	// Create cron with InitiatorID = executor A's ID
+	cronID := core.GenerateRandomID()
+	cron := &core.Cron{
+		ID:                      cronID,
+		ColonyName:              colonyName,
+		Name:                    "rereg-cron",
+		Interval:                60,
+		NextRun:                 time.Now().Add(-10 * time.Second),
+		LastRun:                 time.Now().Add(-70 * time.Second),
+		WorkflowSpec:            workflowJSON,
+		WaitForPrevProcessGraph: false,
+		InitiatorID:             executorA.ID,
+		InitiatorName:           executorA.Name,
+	}
+	err = db.AddCron(cron)
+	assert.Nil(t, err)
+
+	// Simulate executor re-registration: remove and add with new ID.
+	// AddExecutor on an UNREGISTERED executor deletes the old entry and
+	// creates a new one, so the original ID disappears from the store.
+	err = db.RemoveExecutorByName(colonyName, executorA.Name)
+	assert.Nil(t, err)
+
+	executorB := utils.CreateTestExecutor(colonyName)
+	executorB.Name = executorA.Name // same name, different ID
+	err = db.AddExecutor(executorB)
+	assert.Nil(t, err)
+	err = db.ApproveExecutor(executorB)
+	assert.Nil(t, err)
+
+	// Verify executor A's ID is gone (replaced by B)
+	oldExec, err := db.GetExecutorByID(executorA.ID)
+	assert.Nil(t, err)
+	assert.Nil(t, oldExec)
+
+	// StartCron should succeed despite the original initiator ID being gone
+	savedCron, err := db.GetCronByID(cronID)
+	assert.Nil(t, err)
+	oldNextRun := savedCron.NextRun
+
+	controller.StartCron(savedCron)
+
+	// Verify NextRun advanced (cron did not get stuck)
+	updatedCron, err := db.GetCronByID(cronID)
+	assert.Nil(t, err)
+	assert.True(t, updatedCron.NextRun.After(oldNextRun), "NextRun should have advanced after executor re-registration")
+
+	// Verify a process graph was created (not just NextRun advanced on error)
+	assert.NotEmpty(t, updatedCron.PrevProcessGraphID)
+	assert.NotEqual(t, cron.PrevProcessGraphID, updatedCron.PrevProcessGraphID)
+}
+
+// TestCronStartAdvancesNextRunOnWaitForPrevWithDeletedGraph verifies the exact
+// production bug: a cron with WaitForPrevProcessGraph=true references a process
+// graph that was deleted by retention. The cron should still run.
+func TestCronStartAdvancesNextRunOnWaitForPrevWithDeletedGraph(t *testing.T) {
+	db, err := prepareTestDB("TEST_CRON_DELETED_")
+	assert.Nil(t, err)
+	defer db.Close()
+
+	controller := createTestColoniesController(db)
+	defer controller.Stop()
+
+	colonyName := core.GenerateRandomID()
+
+	// Create a valid workflow spec (single function)
+	workflowSpec := core.CreateWorkflowSpec(colonyName)
+	funcSpec := utils.CreateTestFunctionSpec(colonyName)
+	workflowSpec.AddFunctionSpec(funcSpec)
+	workflowJSON, err := workflowSpec.ToJSON()
+	assert.Nil(t, err)
+
+	cronID := core.GenerateRandomID()
+	cron := &core.Cron{
+		ID:                      cronID,
+		ColonyName:              colonyName,
+		Name:                    "cron-with-deleted-prev",
+		Interval:                60,
+		NextRun:                 time.Now().Add(-10 * time.Second), // already expired
+		LastRun:                 time.Now().Add(-70 * time.Second),
+		WorkflowSpec:            workflowJSON,
+		WaitForPrevProcessGraph: true,
+		PrevProcessGraphID:      "nonexistent-graph-deleted-by-retention",
+		InitiatorID:             core.GenerateRandomID(),
+	}
+
+	err = db.AddCron(cron)
+	assert.Nil(t, err)
+
+	// The previous process graph doesn't exist (simulating retention deletion)
+	// GetProcessGraphByID should return (nil, nil)
+	graph, err := db.GetProcessGraphByID("nonexistent-graph-deleted-by-retention")
+	assert.Nil(t, err)
+	assert.Nil(t, graph)
+
+	// Trigger cron evaluation
+	controller.TriggerCrons()
+
+	// Give the controller a moment to process
+	time.Sleep(500 * time.Millisecond)
+
+	// Verify NextRun was advanced (the cron didn't get stuck)
+	updatedCron, err := db.GetCronByID(cronID)
+	assert.Nil(t, err)
+	assert.True(t, updatedCron.NextRun.After(cron.NextRun), "NextRun should have advanced, was %v now %v", cron.NextRun, updatedCron.NextRun)
+}
+
 // Test generator functionality with mocks
 func TestColoniesControllerGeneratorOperations(t *testing.T) {
 	controller, dbMock := createFakeColoniesController()
