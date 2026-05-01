@@ -235,6 +235,23 @@ func (handler *DefaultEventHandler) sendSignal(process *core.Process) {
 			}
 		}
 
+		// Routed processes (those with Conditions.ExecutorNames) can only run
+		// on a specific named executor. The round-robin "wake one type-matching
+		// listener" strategy is wrong for these: with N executors of the same
+		// type and only 1 valid target, the round-robin lands on the right
+		// executor only ~1/N of the time. The unlucky N-1 picks wake the
+		// wrong executor (it can't assign — name mismatch — and goes back to
+		// sleep). The correct executor sits in its 10s long-poll until either
+		// timeout or a future round-robin happens to land on it.
+		//
+		// For routed processes we broadcast to ALL type-matching listeners.
+		// All N executors call Assign() concurrently; the one matching
+		// ExecutorNames wins the assign atomically; the rest no-op. Net effect:
+		// N-1 wasted Assign calls (cheap, bounded) instead of waiting up to
+		// N×10s for round-robin to hit the right executor. Thundering-herd
+		// protection is preserved for unrouted processes (the common bulk path).
+		isRouted := len(process.FunctionSpec.Conditions.ExecutorNames) > 0
+
 		generalWoken := false // Track if we've already woken a general listener
 
 		for _, t := range targets {
@@ -256,10 +273,10 @@ func (handler *DefaultEventHandler) sendSignal(process *core.Process) {
 				}
 			}
 
-			// Pass 2: Wake ONE general listener using round-robin.
-			// General listeners are executors waiting for ANY process of their type.
-			// Only wake one general listener across all targets to prevent thundering herd.
-			if generalWoken {
+			// Pass 2: Wake general listener(s).
+			// - Routed process (ExecutorNames set): broadcast to all so the right one can grab it.
+			// - Otherwise: wake exactly one via round-robin (thundering-herd protection).
+			if !isRouted && generalWoken {
 				continue
 			}
 
@@ -272,6 +289,19 @@ func (handler *DefaultEventHandler) sendSignal(process *core.Process) {
 			}
 
 			if len(generalListeners) == 0 {
+				continue
+			}
+
+			if isRouted {
+				// Broadcast to all type-matching listeners.
+				for _, listenerID := range generalListeners {
+					c := handler.listeners[t][listenerID]
+					select {
+					case c <- process.Clone():
+					default:
+						// Channel full, skip — that executor will pick up on its next long-poll.
+					}
+				}
 				continue
 			}
 

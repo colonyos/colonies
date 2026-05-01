@@ -50,6 +50,61 @@ func (controller *ColoniesController) GetProcessGraphStorage() *processGraphStor
 	}
 }
 
+// resolveWithBackoff calls graph.Resolve() with exponential backoff between
+// retries. The earlier implementation slept a flat 500ms between retries
+// (10 retries × 500ms = 5s worst case), which is wildly oversized:
+//
+//   - Same-server case: AddChild's row commits in microseconds-to-low-ms;
+//     the race window during which graph.Resolve sees a freshly-inserted
+//     child whose row isn't visible yet is tiny. A 1-5ms sleep clears it.
+//   - Multi-server case (etcd-replicated cluster): cross-server propagation
+//     is typically tens of ms over LAN. ≤50ms sleep clears it.
+//
+// Dynamic agentic workflows insert nodes mid-execution, hitting this race
+// window many times per workflow. The flat 500ms sleep added seconds of
+// wall-clock latency per assignment under load.
+//
+// This helper keeps total budget close to ~1s (50 × ≤50ms cap), but with
+// 1-2-4-8-16-32-50ms exponential backoff each individual race usually
+// resolves in <10ms. Identical correctness, ~50-100x lower typical latency.
+func resolveWithBackoff(graph *core.ProcessGraph) error {
+	const maxRetries = 50
+	const initialBackoff = 1 * time.Millisecond
+	const maxBackoff = 50 * time.Millisecond
+
+	start := time.Now()
+	backoff := initialBackoff
+	for i := 0; i < maxRetries; i++ {
+		err := graph.Resolve()
+		if err == nil {
+			if i > 0 {
+				log.WithFields(log.Fields{
+					"GraphId":      graph.ID,
+					"Retries":      i,
+					"DurationMs":   time.Since(start).Milliseconds(),
+				}).Info("resolveWithBackoff succeeded after retries")
+			}
+			return nil
+		}
+		time.Sleep(backoff)
+		if backoff < maxBackoff {
+			backoff *= 2
+			if backoff > maxBackoff {
+				backoff = maxBackoff
+			}
+		}
+	}
+	// Final attempt — if it still fails, surface the error to the caller.
+	finalErr := graph.Resolve()
+	log.WithFields(log.Fields{
+		"GraphId":    graph.ID,
+		"Retries":    maxRetries,
+		"DurationMs": time.Since(start).Milliseconds(),
+		"FinalErr":   finalErr,
+	}).Warn("resolveWithBackoff exhausted retries")
+	return finalErr
+}
+
 // AssignResult contains the result of a process assignment attempt
 type AssignResult struct {
 	Process       *core.Process
@@ -1288,33 +1343,18 @@ func (controller *ColoniesController) Assign(executorID string, colonyName strin
 
 				// One Colonies server might have added a processgraph, and another colonies directly get an assign request
 				// This means that all processes part of the graph might not yet have been added, consequently the
-				// processgraph.Resolve() call might fail.
-				// The solution is to retry a couple of times.
-				maxRetries := 10
-				timeBetweenRetries := 500 * time.Millisecond // We will wait what max 10 * 0.5 = 5 seconds
-				retries := 0
-
-				for {
-					if retries >= maxRetries {
-						err2 := controller.HandleDefunctProcessgraph(processGraph.ID, selectedProcess.ID, err)
-						if err2 != nil {
-							log.Error(err2)
-							cmd.errorChan <- err2
-							return
-						}
-
-						log.Error(err)
-						cmd.errorChan <- err
+				// processgraph.Resolve() call might fail. We retry with exponential backoff (see resolveWithBackoff).
+				err = resolveWithBackoff(processGraph)
+				if err != nil {
+					err2 := controller.HandleDefunctProcessgraph(processGraph.ID, selectedProcess.ID, err)
+					if err2 != nil {
+						log.Error(err2)
+						cmd.errorChan <- err2
 						return
 					}
-					err = processGraph.Resolve()
-					if err != nil {
-						retries++
-						time.Sleep(timeBetweenRetries)
-						continue
-					} else {
-						break
-					}
+					log.Error(err)
+					cmd.errorChan <- err
+					return
 				}
 
 				// Now, we need to collect the output from the parents and use ut as our input
@@ -1425,28 +1465,15 @@ func (controller *ColoniesController) DistributedAssign(executor *core.Executor,
 		}
 		processGraph.SetStorage(controller.GetProcessGraphStorage())
 
-		maxRetries := 10
-		timeBetweenRetries := 500 * time.Millisecond
-		retries := 0
-
-		for {
-			if retries >= maxRetries {
-				err2 := controller.HandleDefunctProcessgraph(processGraph.ID, selectedProcess.ID, err)
-				if err2 != nil {
-					log.Error(err2)
-					return nil, err2
-				}
-				log.Error(err)
-				return nil, err
+		err = resolveWithBackoff(processGraph)
+		if err != nil {
+			err2 := controller.HandleDefunctProcessgraph(processGraph.ID, selectedProcess.ID, err)
+			if err2 != nil {
+				log.Error(err2)
+				return nil, err2
 			}
-			err = processGraph.Resolve()
-			if err != nil {
-				retries++
-				time.Sleep(timeBetweenRetries)
-				continue
-			} else {
-				break
-			}
+			log.Error(err)
+			return nil, err
 		}
 
 		// Collect output from parents and use as input

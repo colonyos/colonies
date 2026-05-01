@@ -380,7 +380,12 @@ func (h *Handlers) HandleAssignProcess(c backends.Context, recoveredID string, p
 	// Use distributed assign when ExclusiveAssign is false
 	useDistributedAssign := !h.server.ExclusiveAssign()
 
+	assignStart := time.Now()
+	tryCount := 0
+	waitForEventCount := 0
+
 	for {
+		tryCount++
 		var result *AssignResult
 		var assignErr error
 
@@ -426,8 +431,16 @@ func (h *Handlers) HandleAssignProcess(c backends.Context, recoveredID string, p
 
 		// No process available, wait for new processes if timeout is specified
 		if msg.Timeout > 0 {
+			waitStart := time.Now()
+			waitForEventCount++
 			// Wait for a new process event (fires when processes are submitted)
 			h.server.ProcessController().GetEventHandler().WaitForProcess(executor.Type, core.WAITING, "", executor.LocationName, ctx)
+			waitDur := time.Since(waitStart)
+			log.WithFields(log.Fields{
+				"ExecutorType": executor.Type,
+				"WaitMs":       waitDur.Milliseconds(),
+				"WaitN":        waitForEventCount,
+			}).Info("AssignProcess WaitForProcess returned")
 			// Check if we timed out during the wait
 			select {
 			case <-ctx.Done():
@@ -449,6 +462,19 @@ func (h *Handlers) HandleAssignProcess(c backends.Context, recoveredID string, p
 		h.server.HandleHTTPError(c, errors.New("No process available for assignment"), http.StatusNotFound)
 		return
 	}
+
+	// Per-call latency log: how long from AssignProcess request entry until
+	// we actually returned a process, plus how many tryAssign + WaitForEvent
+	// cycles it took. Lets us pin server-side queue waits to the exact stage.
+	log.WithFields(log.Fields{
+		"ExecutorType":    executor.Type,
+		"ProcessId":       process.ID,
+		"FuncName":        process.FunctionSpec.FuncName,
+		"AssignDurMs":     time.Since(assignStart).Milliseconds(),
+		"TryCount":        tryCount,
+		"WaitEventCount":  waitForEventCount,
+		"WaitFromSubMs":   time.Since(process.SubmissionTime).Milliseconds(),
+	}).Info("AssignProcess returning process")
 
 	jsonString, err = process.ToJSON()
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
