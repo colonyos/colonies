@@ -195,6 +195,7 @@ func (m *MockContext) Next()           {}
 type MockServer struct {
 	fileDB          *MockFileDB
 	validator       *MockValidator
+	bus             backends.FileEventBus
 	lastError       error
 	lastStatusCode  int
 	lastPayloadType string
@@ -230,6 +231,10 @@ func (m *MockServer) Validator() security.Validator {
 
 func (m *MockServer) FileDB() database.FileDatabase {
 	return m.fileDB
+}
+
+func (m *MockServer) FileEventBus() backends.FileEventBus {
+	return m.bus
 }
 
 // Helper to create test file

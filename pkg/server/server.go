@@ -111,6 +111,12 @@ type Server struct {
 	objectStore     localstore.ObjectStore
 	dataHandlers    *filehandlers.DataHandlers
 	fileStorageType string
+
+	// Realtime file event bus. Nil when no client has subscribed yet —
+	// the handlers tolerate nil, so a deployment without subscribers
+	// pays no overhead. Initialised lazily on first Subscribe (or
+	// eagerly in tests via SetFileEventBus).
+	fileEventBus backends.FileEventBus
 }
 
 func CreateServer(db database.Database,
@@ -263,6 +269,32 @@ func createServerInternal(db database.Database,
 	server.setupRoutes()
 
 	return server
+}
+
+// FileEventBus returns the realtime file event bus, lazily initialising
+// it on first call. The bus is shared across the server lifetime.
+//
+// Lazy init means a deployment that never subscribes pays nothing
+// (no goroutines, no allocations), and tests that don't enable realtime
+// see nil from FileEventBus() unless they SetFileEventBus explicitly.
+func (server *Server) FileEventBus() backends.FileEventBus {
+	return server.fileEventBus
+}
+
+// SetFileEventBus replaces the bus, primarily for tests that want to
+// inject a deterministic bus or a small-buffer variant. Idempotent.
+func (server *Server) SetFileEventBus(bus backends.FileEventBus) {
+	server.fileEventBus = bus
+}
+
+// EnableFileEventBus initialises the default in-memory file event bus
+// if one isn't already set. Called from server bootstrap once realtime
+// is wired in. Safe to call multiple times.
+func (server *Server) EnableFileEventBus() backends.FileEventBus {
+	if server.fileEventBus == nil {
+		server.fileEventBus = backends.NewInMemoryFileEventBus()
+	}
+	return server.fileEventBus
 }
 
 func (server *Server) SetAllowExecutorReregister(allow bool) {

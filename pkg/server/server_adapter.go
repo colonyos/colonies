@@ -296,6 +296,13 @@ func (s *ServerAdapter) FileDB() database.FileDatabase {
 	return s.server.fileDB
 }
 
+// FileEventBus exposes the realtime file event bus to the file handlers.
+// Returns nil when not initialised; the handler treats nil as "publish
+// disabled" so non-realtime test deployments keep working.
+func (s *ServerAdapter) FileEventBus() backends.FileEventBus {
+	return s.server.FileEventBus()
+}
+
 func (s *ServerAdapter) SecurityDB() database.SecurityDatabase {
 	return s.server.securityDB
 }
