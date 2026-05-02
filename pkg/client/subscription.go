@@ -23,3 +23,26 @@ func createProcessSubscription(conn backends.RealtimeConnection) *ProcessSubscri
 func (subscription *ProcessSubscription) Close() error {
 	return subscription.conn.Close()
 }
+
+// FileSubscription is the client-side handle to a SubscribeFiles
+// websocket. Drain EventChan for normal events; ErrChan carries
+// connection errors and overflow signals (backends.ErrSubscriberOverflowed
+// is delivered as an error with that exact message). Close releases the
+// underlying websocket and any goroutines reading from it.
+type FileSubscription struct {
+	EventChan chan *core.FileEvent
+	ErrChan   chan error
+	conn      backends.RealtimeConnection
+}
+
+func createFileSubscription(conn backends.RealtimeConnection) *FileSubscription {
+	return &FileSubscription{
+		EventChan: make(chan *core.FileEvent),
+		ErrChan:   make(chan error),
+		conn:      conn,
+	}
+}
+
+func (subscription *FileSubscription) Close() error {
+	return subscription.conn.Close()
+}

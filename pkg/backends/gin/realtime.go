@@ -1,6 +1,7 @@
 package gin
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -26,6 +27,12 @@ type RealtimeServer interface {
 	ChannelRouter() *channel.Router
 	ProcessDB() database.ProcessDatabase
 	Validator() security.Validator
+	// FileEventBus is the realtime bus consumed by SubscribeFiles. The
+	// handler bypasses the colonies-controller command queue and reads
+	// directly from the bus (matching the ChannelRouter pattern), so the
+	// only requirement here is that the bus exists when SubscribeFiles
+	// arrives. Returning nil disables the SubscribeFiles route.
+	FileEventBus() backends.FileEventBus
 }
 
 // WSController interface for WebSocket handlers
@@ -122,8 +129,110 @@ func (h *RealtimeHandler) HandleWSRequest(c backends.Context) {
 			h.handleSubscribeProcess(c, rpcMsg, recoveredID, wsConn, wsMsgType)
 		case rpc.SubscribeChannelPayloadType:
 			h.handleSubscribeChannel(c, rpcMsg, recoveredID, wsConn, wsMsgType)
+		case rpc.SubscribeFilesPayloadType:
+			h.handleSubscribeFiles(c, rpcMsg, recoveredID, wsConn, wsMsgType)
 		}
 	}
+}
+
+// handleSubscribeFiles wires a realtime FileEventBus subscription to the
+// websocket. Identity is verified via colony membership — anyone in the
+// colony (user, executor, or owner) may subscribe. The handler bypasses
+// the colonies-controller command queue and reads directly from the bus
+// (matching the ChannelRouter approach in handleSubscribeChannel), so a
+// slow file-event subscriber can never serialise unrelated colony work.
+func (h *RealtimeHandler) handleSubscribeFiles(c backends.Context, rpcMsg *rpc.RPCMsg, recoveredID string, wsConn *websocket.Conn, wsMsgType int) {
+	msg, err := rpc.CreateSubscribeFilesMsgFromJSON(rpcMsg.DecodePayload())
+	if err != nil {
+		h.sendWSErrorMsg(err, http.StatusBadRequest, wsConn, wsMsgType)
+		return
+	}
+	if msg.MsgType != rpcMsg.PayloadType {
+		h.sendWSErrorMsg(errors.New("Failed to subscribe to files, msg.MsgType does not match rpcMsg.PayloadType"), http.StatusBadRequest, wsConn, wsMsgType)
+		return
+	}
+
+	// Auth: must hold colony membership. Same check the file handlers
+	// already use for AddFile / GetFile / RemoveFile, so the subscriber
+	// has read parity with what they could fetch via GetFileData anyway.
+	if err := h.server.Validator().RequireMembership(recoveredID, msg.ColonyName, true); err != nil {
+		h.sendWSErrorMsg(err, http.StatusForbidden, wsConn, wsMsgType)
+		return
+	}
+
+	bus := h.server.FileEventBus()
+	if bus == nil {
+		h.sendWSErrorMsg(errors.New("file event bus not enabled on this server"), http.StatusServiceUnavailable, wsConn, wsMsgType)
+		return
+	}
+
+	// Timeout: 0 = "no client-side timeout" but we still cap the
+	// goroutine lifetime to a sane upper bound so a forgotten subscriber
+	// doesn't pin resources forever.
+	timeout := time.Duration(msg.Timeout) * time.Second
+	if timeout <= 0 {
+		timeout = 24 * time.Hour
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	evCh, errCh := bus.Subscribe(msg.ColonyName, msg.LabelPrefix, msg.Kinds, ctx)
+
+	log.WithFields(log.Fields{
+		"ColonyName":  msg.ColonyName,
+		"LabelPrefix": msg.LabelPrefix,
+		"Kinds":       msg.Kinds,
+		"Timeout":     msg.Timeout,
+	}).Debug("File subscription started")
+
+	for {
+		select {
+		case ev, ok := <-evCh:
+			if !ok {
+				return
+			}
+			if err := h.sendFileEvent(ev, wsConn, wsMsgType); err != nil {
+				log.WithFields(log.Fields{"Error": err}).Debug("File subscription send failed; closing")
+				return
+			}
+
+		case err, ok := <-errCh:
+			if !ok {
+				return
+			}
+			// Overflow is informational; surface it to the client and
+			// keep the subscription open so it can resync via
+			// GetFileData.
+			if err == backends.ErrSubscriberOverflowed {
+				h.sendWSErrorMsg(err, http.StatusOK, wsConn, wsMsgType)
+				continue
+			}
+			h.sendWSErrorMsg(err, http.StatusInternalServerError, wsConn, wsMsgType)
+			return
+
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+// sendFileEvent writes one FileEvent to the websocket inside the standard
+// RPCReplyMsg envelope so existing client decoders can route by payload
+// type without change.
+func (h *RealtimeHandler) sendFileEvent(ev *core.FileEvent, wsConn *websocket.Conn, wsMsgType int) error {
+	body, err := ev.ToJSON()
+	if err != nil {
+		return err
+	}
+	reply, err := rpc.CreateRPCReplyMsg(rpc.SubscribeFilesPayloadType, body)
+	if err != nil {
+		return err
+	}
+	out, err := reply.ToJSON()
+	if err != nil {
+		return err
+	}
+	return wsConn.WriteMessage(wsMsgType, []byte(out))
 }
 
 func (h *RealtimeHandler) handleSubscribeProcesses(c backends.Context, rpcMsg *rpc.RPCMsg, recoveredID string, wsConn *websocket.Conn, wsMsgType int) {
