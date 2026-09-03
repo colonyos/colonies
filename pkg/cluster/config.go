@@ -73,7 +73,7 @@ func (config *Config) Equals(config2 *Config) bool {
 		}
 	}
 
-	if counter == len(config.Nodes) && counter == len(config.Nodes) {
+	if counter == len(config.Nodes) && counter == len(config2.Nodes) {
 		return true
 	}
 

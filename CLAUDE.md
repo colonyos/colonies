@@ -26,9 +26,15 @@ The deployment docker-compose files expect `colonyos/colonies:latest`. Using a d
 
 ### Testing
 ```bash
-make test              # Run all tests (requires grc for colored output)
-make github_test       # Run tests without grc (for CI)
+make test              # Run all tests: needs Postgres on localhost:5432 (make startdb)
+                       # and an S3 server on localhost:9000 for pkg/fs
+make github_test       # Alias for test (used by CI)
 ```
+
+Set a timezone when running tests, e.g. `export TZ=Europe/Stockholm` (the
+database layer refuses to connect without TZ, and one core test expects a
+non-UTC zone). Test packages use per-process databases and dynamic ports, so
+they run in parallel.
 
 ### Development Environment
 ```bash

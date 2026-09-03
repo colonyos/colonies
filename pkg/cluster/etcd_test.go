@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -8,10 +9,8 @@ import (
 )
 
 func TestCreateEtcdCluster(t *testing.T) {
-	node1 := Node{Name: "etcd1", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: 26100}
-	node2 := Node{Name: "etcd2", Host: "localhost", EtcdClientPort: 24200, EtcdPeerPort: 23200, RelayPort: 25200, APIPort: 26200}
-	node3 := Node{Name: "etcd3", Host: "localhost", EtcdClientPort: 24300, EtcdPeerPort: 23300, RelayPort: 25300, APIPort: 26300}
-	node4 := Node{Name: "etcd4", Host: "localhost", EtcdClientPort: 24400, EtcdPeerPort: 23400, RelayPort: 25400, APIPort: 26400}
+	nodes := testClusterNodes(t, "etcd1", "etcd2", "etcd3", "etcd4")
+	node1, node2, node3, node4 := nodes[0], nodes[1], nodes[2], nodes[3]
 
 	config := Config{}
 	config.AddNode(node1)
@@ -19,12 +18,15 @@ func TestCreateEtcdCluster(t *testing.T) {
 	config.AddNode(node3)
 	config.AddNode(node4)
 
-	server1 := CreateEtcdServer(node1, config, ".")
-	server2 := CreateEtcdServer(node2, config, ".")
-	server3 := CreateEtcdServer(node3, config, ".")
-	server4 := CreateEtcdServer(node4, config, ".")
+	dataPath := t.TempDir()
+	server1 := CreateEtcdServer(node1, config, dataPath)
+	server2 := CreateEtcdServer(node2, config, dataPath)
+	server3 := CreateEtcdServer(node3, config, dataPath)
+	server4 := CreateEtcdServer(node4, config, dataPath)
 
-	assert.Equal(t, server1.buildInitialClusterStr(), "etcd1=http://localhost:23100,etcd2=http://localhost:23200,etcd3=http://localhost:23300,etcd4=http://localhost:23400")
+	expectedClusterStr := fmt.Sprintf("etcd1=http://localhost:%d,etcd2=http://localhost:%d,etcd3=http://localhost:%d,etcd4=http://localhost:%d",
+		node1.EtcdPeerPort, node2.EtcdPeerPort, node3.EtcdPeerPort, node4.EtcdPeerPort)
+	assert.Equal(t, server1.buildInitialClusterStr(), expectedClusterStr)
 
 	server1.Start()
 	server2.Start()
@@ -70,11 +72,11 @@ func TestCreateEtcdCluster(t *testing.T) {
 }
 
 func TestEtcdAssignmentsPauseResume(t *testing.T) {
-	node := Node{Name: "etcd1", Host: "localhost", EtcdClientPort: 24500, EtcdPeerPort: 23500, RelayPort: 25500, APIPort: 26500}
+	node := testClusterNodes(t, "etcd1")[0]
 	config := Config{}
 	config.AddNode(node)
 
-	server := CreateEtcdServer(node, config, ".")
+	server := CreateEtcdServer(node, config, t.TempDir())
 	server.Start()
 	server.WaitToStart()
 
@@ -123,11 +125,11 @@ func TestEtcdAssignmentsPauseResume(t *testing.T) {
 }
 
 func TestEtcdAssignmentsPauseResumeWithoutClient(t *testing.T) {
-	node := Node{Name: "etcd2", Host: "localhost", EtcdClientPort: 24600, EtcdPeerPort: 23600, RelayPort: 25600, APIPort: 26600}
+	node := testClusterNodes(t, "etcd2")[0]
 	config := Config{}
 	config.AddNode(node)
 
-	server := CreateEtcdServer(node, config, ".")
+	server := CreateEtcdServer(node, config, t.TempDir())
 	colonyName := "test_colony"
 
 	// Test methods fail when etcd client is not initialized
@@ -146,15 +148,16 @@ func TestEtcdAssignmentsPauseResumeWithoutClient(t *testing.T) {
 }
 
 func TestEtcdAssignmentsPauseResumeMultiNode(t *testing.T) {
-	node1 := Node{Name: "etcd1", Host: "localhost", EtcdClientPort: 24700, EtcdPeerPort: 23700, RelayPort: 25700, APIPort: 26700}
-	node2 := Node{Name: "etcd2", Host: "localhost", EtcdClientPort: 24800, EtcdPeerPort: 23800, RelayPort: 25800, APIPort: 26800}
+	nodes := testClusterNodes(t, "etcd1", "etcd2")
+	node1, node2 := nodes[0], nodes[1]
 
 	config := Config{}
 	config.AddNode(node1)
 	config.AddNode(node2)
 
-	server1 := CreateEtcdServer(node1, config, ".")
-	server2 := CreateEtcdServer(node2, config, ".")
+	dataPath := t.TempDir()
+	server1 := CreateEtcdServer(node1, config, dataPath)
+	server2 := CreateEtcdServer(node2, config, dataPath)
 
 	server1.Start()
 	server2.Start()

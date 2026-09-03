@@ -9,22 +9,31 @@ import (
 	"github.com/colonyos/colonies/pkg/constants"
 	"github.com/colonyos/colonies/pkg/database/postgresql"
 	"github.com/colonyos/colonies/pkg/security/crypto"
+	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/stretchr/testify/assert"
 )
+
+// testServerManagerNode returns a single-node cluster config with
+// kernel-assigned ports so tests can run in parallel.
+func testServerManagerNode(t *testing.T) cluster.Node {
+	ports, err := utils.FreePorts(4)
+	assert.Nil(t, err)
+	return cluster.Node{
+		Name:           "test-node",
+		Host:           "localhost",
+		EtcdClientPort: ports[0],
+		EtcdPeerPort:   ports[1],
+		RelayPort:      ports[2],
+		APIPort:        ports[3],
+	}
+}
 
 func TestServerManagerCreation(t *testing.T) {
 	db, err := postgresql.PrepareTests()
 	assert.Nil(t, err)
 	defer db.Close()
 
-	node := cluster.Node{
-		Name:           "test-node",
-		Host:           "localhost",
-		EtcdClientPort: 24100,
-		EtcdPeerPort:   23100,
-		RelayPort:      25100,
-		APIPort:        constants.TESTPORT,
-	}
+	node := testServerManagerNode(t)
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
 
@@ -32,7 +41,7 @@ func TestServerManagerCreation(t *testing.T) {
 		db,
 		node,
 		clusterConfig,
-		"/tmp/colonies/etcd",
+		t.TempDir(),
 		constants.GENERATOR_TRIGGER_PERIOD,
 		constants.CRON_TRIGGER_PERIOD,
 	)
@@ -46,14 +55,7 @@ func TestServerManagerBackendFactoryRegistration(t *testing.T) {
 	assert.Nil(t, err)
 	defer db.Close()
 
-	node := cluster.Node{
-		Name:           "test-node",
-		Host:           "localhost",
-		EtcdClientPort: 24100,
-		EtcdPeerPort:   23100,
-		RelayPort:      25100,
-		APIPort:        constants.TESTPORT,
-	}
+	node := testServerManagerNode(t)
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
 
@@ -61,7 +63,7 @@ func TestServerManagerBackendFactoryRegistration(t *testing.T) {
 		db,
 		node,
 		clusterConfig,
-		"/tmp/colonies/etcd",
+		t.TempDir(),
 		constants.GENERATOR_TRIGGER_PERIOD,
 		constants.CRON_TRIGGER_PERIOD,
 	)
@@ -88,14 +90,7 @@ func TestServerManagerConfigManagement(t *testing.T) {
 	assert.Nil(t, err)
 	defer db.Close()
 
-	node := cluster.Node{
-		Name:           "test-node",
-		Host:           "localhost",
-		EtcdClientPort: 24100,
-		EtcdPeerPort:   23100,
-		RelayPort:      25100,
-		APIPort:        constants.TESTPORT,
-	}
+	node := testServerManagerNode(t)
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
 
@@ -103,7 +98,7 @@ func TestServerManagerConfigManagement(t *testing.T) {
 		db,
 		node,
 		clusterConfig,
-		"/tmp/colonies/etcd",
+		t.TempDir(),
 		constants.GENERATOR_TRIGGER_PERIOD,
 		constants.CRON_TRIGGER_PERIOD,
 	)
@@ -111,16 +106,16 @@ func TestServerManagerConfigManagement(t *testing.T) {
 	// Add gin server config
 	ginConfig := &ServerConfig{
 		BackendType:             GinBackendType,
-		Port:                   constants.TESTPORT + 100,
-		TLS:                    false,
-		TLSPrivateKeyPath:      "",
-		TLSCertPath:            "",
-		ExclusiveAssign:        true,
+		Port:                    node.APIPort,
+		TLS:                     false,
+		TLSPrivateKeyPath:       "",
+		TLSCertPath:             "",
+		ExclusiveAssign:         true,
 		AllowExecutorReregister: false,
-		Retention:              false,
-		RetentionPolicy:        -1,
-		RetentionPeriod:        500,
-		Enabled:                true,
+		Retention:               false,
+		RetentionPolicy:         -1,
+		RetentionPeriod:         500,
+		Enabled:                 true,
 	}
 
 	err = sm.AddServerConfig(ginConfig)
@@ -135,7 +130,7 @@ func TestServerManagerConfigManagement(t *testing.T) {
 	sm.running = true
 	err = sm.AddServerConfig(&ServerConfig{
 		BackendType: "test",
-		Enabled:    true,
+		Enabled:     true,
 	})
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "cannot add server config while server manager is running")
@@ -155,14 +150,7 @@ func TestServerManagerLifecycle(t *testing.T) {
 	err = db.SetServerID("", serverID)
 	assert.Nil(t, err)
 
-	node := cluster.Node{
-		Name:           "test-node",
-		Host:           "localhost",
-		EtcdClientPort: 24100,
-		EtcdPeerPort:   23100,
-		RelayPort:      25100,
-		APIPort:        constants.TESTPORT + 300,
-	}
+	node := testServerManagerNode(t)
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
 
@@ -170,7 +158,7 @@ func TestServerManagerLifecycle(t *testing.T) {
 		db,
 		node,
 		clusterConfig,
-		"/tmp/colonies/etcd",
+		t.TempDir(),
 		constants.GENERATOR_TRIGGER_PERIOD,
 		constants.CRON_TRIGGER_PERIOD,
 	)
@@ -182,16 +170,16 @@ func TestServerManagerLifecycle(t *testing.T) {
 
 	ginConfig := &ServerConfig{
 		BackendType:             GinBackendType,
-		Port:                   constants.TESTPORT + 300,
-		TLS:                    false,
-		TLSPrivateKeyPath:      "",
-		TLSCertPath:            "",
-		ExclusiveAssign:        true,
+		Port:                    node.APIPort,
+		TLS:                     false,
+		TLSPrivateKeyPath:       "",
+		TLSCertPath:             "",
+		ExclusiveAssign:         true,
 		AllowExecutorReregister: false,
-		Retention:              false,
-		RetentionPolicy:        -1,
-		RetentionPeriod:        500,
-		Enabled:                true,
+		Retention:               false,
+		RetentionPolicy:         -1,
+		RetentionPeriod:         500,
+		Enabled:                 true,
 	}
 
 	err = sm.AddServerConfig(ginConfig)
@@ -217,7 +205,7 @@ func TestServerManagerLifecycle(t *testing.T) {
 	assert.True(t, exists)
 	assert.Equal(t, GinBackendType, ginStatus.BackendType)
 	assert.True(t, ginStatus.Running)
-	assert.Equal(t, constants.TESTPORT+300, ginStatus.Port)
+	assert.Equal(t, node.APIPort, ginStatus.Port)
 
 	// Get specific server
 	ginServer, exists := sm.GetServer(GinBackendType)
@@ -245,14 +233,7 @@ func TestServerManagerMissingFactory(t *testing.T) {
 	assert.Nil(t, err)
 	defer db.Close()
 
-	node := cluster.Node{
-		Name:           "test-node",
-		Host:           "localhost",
-		EtcdClientPort: 24100,
-		EtcdPeerPort:   23100,
-		RelayPort:      25100,
-		APIPort:        constants.TESTPORT + 400,
-	}
+	node := testServerManagerNode(t)
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
 
@@ -260,7 +241,7 @@ func TestServerManagerMissingFactory(t *testing.T) {
 		db,
 		node,
 		clusterConfig,
-		"/tmp/colonies/etcd",
+		t.TempDir(),
 		constants.GENERATOR_TRIGGER_PERIOD,
 		constants.CRON_TRIGGER_PERIOD,
 	)
@@ -268,8 +249,8 @@ func TestServerManagerMissingFactory(t *testing.T) {
 	// Add config without registering factory
 	ginConfig := &ServerConfig{
 		BackendType: GinBackendType,
-		Port:       constants.TESTPORT + 400,
-		Enabled:    true,
+		Port:        node.APIPort,
+		Enabled:     true,
 	}
 
 	err = sm.AddServerConfig(ginConfig)
@@ -295,14 +276,7 @@ func TestServerManagerStopTimeout(t *testing.T) {
 	err = db.SetServerID("", serverID)
 	assert.Nil(t, err)
 
-	node := cluster.Node{
-		Name:           "test-node",
-		Host:           "localhost",
-		EtcdClientPort: 24100,
-		EtcdPeerPort:   23100,
-		RelayPort:      25100,
-		APIPort:        constants.TESTPORT + 500,
-	}
+	node := testServerManagerNode(t)
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
 
@@ -310,7 +284,7 @@ func TestServerManagerStopTimeout(t *testing.T) {
 		db,
 		node,
 		clusterConfig,
-		"/tmp/colonies/etcd",
+		t.TempDir(),
 		constants.GENERATOR_TRIGGER_PERIOD,
 		constants.CRON_TRIGGER_PERIOD,
 	)
@@ -322,16 +296,16 @@ func TestServerManagerStopTimeout(t *testing.T) {
 
 	ginConfig := &ServerConfig{
 		BackendType:             GinBackendType,
-		Port:                   constants.TESTPORT + 500,
-		TLS:                    false,
-		TLSPrivateKeyPath:      "",
-		TLSCertPath:            "",
-		ExclusiveAssign:        true,
+		Port:                    node.APIPort,
+		TLS:                     false,
+		TLSPrivateKeyPath:       "",
+		TLSCertPath:             "",
+		ExclusiveAssign:         true,
 		AllowExecutorReregister: false,
-		Retention:              false,
-		RetentionPolicy:        -1,
-		RetentionPeriod:        500,
-		Enabled:                true,
+		Retention:               false,
+		RetentionPolicy:         -1,
+		RetentionPeriod:         500,
+		Enabled:                 true,
 	}
 
 	err = sm.AddServerConfig(ginConfig)
@@ -364,14 +338,7 @@ func TestServerManagerHealthCheck(t *testing.T) {
 	err = db.SetServerID("", serverID)
 	assert.Nil(t, err)
 
-	node := cluster.Node{
-		Name:           "test-node",
-		Host:           "localhost",
-		EtcdClientPort: 24100,
-		EtcdPeerPort:   23100,
-		RelayPort:      25100,
-		APIPort:        constants.TESTPORT + 600,
-	}
+	node := testServerManagerNode(t)
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
 
@@ -379,7 +346,7 @@ func TestServerManagerHealthCheck(t *testing.T) {
 		db,
 		node,
 		clusterConfig,
-		"/tmp/colonies/etcd",
+		t.TempDir(),
 		constants.GENERATOR_TRIGGER_PERIOD,
 		constants.CRON_TRIGGER_PERIOD,
 	)
@@ -397,16 +364,16 @@ func TestServerManagerHealthCheck(t *testing.T) {
 
 	ginConfig := &ServerConfig{
 		BackendType:             GinBackendType,
-		Port:                   constants.TESTPORT + 600,
-		TLS:                    false,
-		TLSPrivateKeyPath:      "",
-		TLSCertPath:            "",
-		ExclusiveAssign:        true,
+		Port:                    node.APIPort,
+		TLS:                     false,
+		TLSPrivateKeyPath:       "",
+		TLSCertPath:             "",
+		ExclusiveAssign:         true,
 		AllowExecutorReregister: false,
-		Retention:              false,
-		RetentionPolicy:        -1,
-		RetentionPeriod:        500,
-		Enabled:                true,
+		Retention:               false,
+		RetentionPolicy:         -1,
+		RetentionPeriod:         500,
+		Enabled:                 true,
 	}
 
 	err = sm.AddServerConfig(ginConfig)

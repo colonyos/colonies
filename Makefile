@@ -1,5 +1,5 @@
 all: build
-.PHONY: all build
+.PHONY: all build container container-multiplatform container-multiplatform-push push coverage test test-all test-compat github_test install startdb nukedb
 
 BUILD_IMAGE ?= colonyos/colonies
 PUSH_IMAGE ?= colonyos/colonies:v1.9.10
@@ -34,55 +34,18 @@ push:
 	docker push $(PUSH_IMAGE)
 
 coverage:
-	./buildtools/coverage.sh
-	./buildtools/codecov
+	@go test -coverprofile=coverage.txt -covermode=atomic ./...
 
 build_cryptolib_ubuntu_2020:
 	cd buildtools; ./build_cryptolib_ubuntu.sh 
 
+# Runs all tests: needs Postgres on localhost:5432 (make startdb) and an S3
+# server on localhost:9000 for pkg/fs. Test packages use per-process databases
+# and dynamic ports, so they run in parallel.
 test:
-	@cd tests/reliability; go test -v --race
-	@cd internal/crypto; go test -v --race
-	@cd pkg/core; go test -v --race
-	@cd pkg/database/postgresql; go test -v --race
-	@cd pkg/rpc; go test -v --race
-	@cd pkg/security; go test -v --race
-	@cd pkg/security/crypto; go test -v --race
-	@cd pkg/security/validator; go test -v --race
-	@cd pkg/backends/gin; go test -v --race
-	@cd pkg/client; go test -v --race
-	@cd pkg/client/backends; go test -v --race
-	@cd pkg/client/gin; go test -v --race
-	@cd pkg/server; go test -v --race
-	@cd pkg/server/controllers; go test -v --race
-	@cd pkg/server/handlers/attribute; go test -v --race
-	@cd pkg/server/handlers/blueprint; go test -v --race
-	@cd pkg/server/handlers/channel; go test -v --race
-	@cd pkg/server/handlers/colony; go test -v --race
-	@cd pkg/server/handlers/cron; go test -v --race
-	@cd pkg/server/handlers/executor; go test -v --race
-	@cd pkg/server/handlers/file; go test -v --race
-	@cd pkg/server/handlers/function; go test -v --race
-	@cd pkg/server/handlers/generator; go test -v --race
-	@cd pkg/server/handlers/location; go test -v --race
-	@cd pkg/server/handlers/log; go test -v --race
-	@cd pkg/server/handlers/process; go test -v --race
-	@cd pkg/server/handlers/processgraph; go test -v --race
-	@cd pkg/server/handlers/security; go test -v --race
-	@cd pkg/server/handlers/server; go test -v --race
-	@cd pkg/server/handlers/snapshot; go test -v --race
-	@cd pkg/server/handlers/user; go test -v --race
-	@cd pkg/server/handlers/realtime; go test -v --race
-	@cd pkg/server/registry; go test -v --race
-	@cd pkg/server/utils; go test -v --race
-	@cd pkg/scheduler; go test -v --race
-	@cd pkg/parsers; go test -v --race
-	@cd pkg/utils; go test -v --race
-	@cd pkg/validate; go test -v --race
-	@cd pkg/channel; go test -v --race
-	@cd pkg/cluster; go test -v --race
-	@cd pkg/cron; go test -v --race
-	@cd pkg/fs; go test -v --race
+	@go test -race ./...
+
+github_test: test
 
 install:
 	cp ./bin/colonies /usr/local/bin

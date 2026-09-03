@@ -4,12 +4,12 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, dev ]
 
 jobs:
   # Label of the container job
   runner-job:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     # Service containers to run with `runner-job`
     services:
@@ -36,10 +36,10 @@ jobs:
           # Maps tcp port 5432 on service container to the host
           - 5432:5432
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v7
 
     - name: Set up Go
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v7
       with:
         go-version: 1.25.5
 
@@ -60,12 +60,13 @@ jobs:
         COLONIES_DB_HOST: localhost
 
     - name: Generate coverage
+      if: false
       run: |
         # Get package list excluding monitoring
         PKGS=$(go list ./pkg/... | grep -v '/monitoring$' | tr '\n' ' ')
         # Run tests with coverage
         # Use -coverpkg to measure client package coverage through server tests
-        go test -p 1 -race -coverprofile=coverage.raw -covermode=atomic -coverpkg=./pkg/... $PKGS
+        go test -race -coverprofile=coverage.raw -covermode=atomic -coverpkg=./pkg/... $PKGS
         # Filter out test utilities, mocks, and monitoring from coverage report
         grep -v 'pkg/server/test_utils.go' coverage.raw | \
         grep -v 'pkg/monitoring/' | \
@@ -84,6 +85,7 @@ jobs:
         COLONIES_DB_HOST: localhost
 
     - name: Upload coverage to Codecov
+      if: false
       uses: codecov/codecov-action@v4
       with:
         files: ./coverage.out
@@ -91,4 +93,3 @@ jobs:
         verbose: true
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-

@@ -30,14 +30,15 @@ func TestChannelEndToEndIntegration(t *testing.T) {
 	defer db.Close()
 
 	// Create server
-	port := 8081
+	ports := utils.FreePortsOrPanic(4)
+	port := ports[0]
 	thisNode := cluster.Node{
 		Name:           "test-node",
 		Host:           "localhost",
 		APIPort:        port,
-		EtcdClientPort: 2379,
-		EtcdPeerPort:   2380,
-		RelayPort:      25100,
+		EtcdClientPort: ports[1],
+		EtcdPeerPort:   ports[2],
+		RelayPort:      ports[3],
 	}
 	clusterConfig := cluster.Config{
 		Nodes: []cluster.Node{thisNode},
@@ -51,7 +52,7 @@ func TestChannelEndToEndIntegration(t *testing.T) {
 		"",
 		thisNode,
 		clusterConfig,
-		"/tmp/test-etcd-"+time.Now().Format("20060102150405"), // etcd path in /tmp
+		t.TempDir(),
 		10,    // generator period
 		10,    // cron period
 		false, // exclusive assign
@@ -219,14 +220,15 @@ func TestChannelCleanupOnProcessFail(t *testing.T) {
 	defer db.Close()
 
 	// Create server
-	port := 8082
+	ports := utils.FreePortsOrPanic(4)
+	port := ports[0]
 	thisNode := cluster.Node{
 		Name:           "test-node",
 		Host:           "localhost",
 		APIPort:        port,
-		EtcdClientPort: 2379,
-		EtcdPeerPort:   2380,
-		RelayPort:      25101,
+		EtcdClientPort: ports[1],
+		EtcdPeerPort:   ports[2],
+		RelayPort:      ports[3],
 	}
 	clusterConfig := cluster.Config{
 		Nodes: []cluster.Node{thisNode},
@@ -240,7 +242,7 @@ func TestChannelCleanupOnProcessFail(t *testing.T) {
 		"",
 		thisNode,
 		clusterConfig,
-		"/tmp/test-etcd-fail-"+time.Now().Format("20060102150405"),
+		t.TempDir(),
 		10,    // generator period
 		10,    // cron period
 		false, // exclusive assign

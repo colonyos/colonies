@@ -8,7 +8,6 @@ const MAX_LOG_COUNT = 500     // Maximum number of log entries that can be reque
 
 // Test Configuration - Default values used in test environments
 const TESTHOST = "localhost" // Default hostname for test servers
-const TESTPORT = 28088       // Default port for test servers
 
 // Background Processing Periods - How frequently various system tasks run
 const RELEASE_PERIOD = 1              // Period in seconds when processes are checked for max exec time or max wait time

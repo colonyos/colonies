@@ -190,7 +190,9 @@ func TestSubscribeChangeStateProcess2(t *testing.T) {
 	err = client.Close(assignedProcess.ID, env.Executor1PrvKey)
 	assert.Nil(t, err)
 
-	time.Sleep(5 * time.Second)
+	// The process state is committed once Close returns; a short pause lets
+	// any in-flight events drain before subscribing after the fact
+	time.Sleep(500 * time.Millisecond)
 
 	subscription, err := client.SubscribeProcess(env.Colony1Name,
 		addedProcess.ID,
