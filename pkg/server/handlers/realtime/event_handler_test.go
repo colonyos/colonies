@@ -2,14 +2,16 @@ package realtime_test
 
 import (
 	"context"
+	"net"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	backendGin "github.com/colonyos/colonies/pkg/backends/gin"
 	"github.com/colonyos/colonies/pkg/cluster"
 	"github.com/colonyos/colonies/pkg/core"
-	backendGin "github.com/colonyos/colonies/pkg/backends/gin"
 	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -402,19 +404,54 @@ func TestEventHandlerSubscribeProcessIDFailed(t *testing.T) {
 	assert.NotNil(t, retVal.err) // Not OK, will timeout
 }
 
+// waitForRelayServers blocks until every node's relay port accepts
+// connections. The relay servers listen in a goroutine, so signalling before
+// they are bound would silently lose the broadcast.
+func waitForRelayServers(t *testing.T, nodes ...cluster.Node) {
+	t.Helper()
+	for _, node := range nodes {
+		addr := net.JoinHostPort(node.Host, strconv.Itoa(node.RelayPort))
+		assert.Eventually(t, func() bool {
+			conn, err := net.DialTimeout("tcp", addr, 100*time.Millisecond)
+			if err != nil {
+				return false
+			}
+			conn.Close()
+			return true
+		}, 10*time.Second, 20*time.Millisecond, "relay server %s did not start", node.Name)
+	}
+}
+
 func TestEventHandleRelayServer(t *testing.T) {
-	node1 := cluster.Node{Name: "etcd1", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: 26100}
-	node2 := cluster.Node{Name: "etcd2", Host: "localhost", EtcdClientPort: 24200, EtcdPeerPort: 23200, RelayPort: 25200, APIPort: 26200}
-	node3 := cluster.Node{Name: "etcd3", Host: "localhost", EtcdClientPort: 24300, EtcdPeerPort: 23300, RelayPort: 25300, APIPort: 26300}
+	// Kernel-assigned ports keep this test from colliding with other test
+	// processes and with earlier iterations of itself in the same process
+	reserved := utils.ReservePortsOrPanic(12)
+	nodes := make([]cluster.Node, 3)
+	for i, name := range []string{"etcd1", "etcd2", "etcd3"} {
+		nodes[i] = cluster.Node{
+			Name:           name,
+			Host:           "localhost",
+			EtcdClientPort: reserved[4*i].Port(),
+			EtcdPeerPort:   reserved[4*i+1].Port(),
+			RelayPort:      reserved[4*i+2].Port(),
+			APIPort:        reserved[4*i+3].Port(),
+		}
+	}
+	node1, node2, node3 := nodes[0], nodes[1], nodes[2]
 
 	config := cluster.Config{}
 	config.AddNode(node1)
 	config.AddNode(node2)
 	config.AddNode(node3)
 
+	utils.ReleasePorts(reserved)
 	relayServer1 := cluster.CreateRelayServer(node1, config)
 	relayServer2 := cluster.CreateRelayServer(node2, config)
 	relayServer3 := cluster.CreateRelayServer(node3, config)
+	defer relayServer1.Shutdown()
+	defer relayServer2.Shutdown()
+	defer relayServer3.Shutdown()
+	waitForRelayServers(t, node1, node2, node3)
 
 	factory1 := backendGin.NewFactory()
 	handler1 := factory1.CreateTestableEventHandler(relayServer1)

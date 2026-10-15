@@ -42,14 +42,20 @@ func TestRetention(t *testing.T) {
 	assert.Nil(t, err)
 
 	stat, err := client.ColonyStatistics(colony.Name, executorPrvKey)
-	assert.Equal(t, stat.SuccessfulWorkflows, 1)
-	assert.Equal(t, stat.SuccessfulProcesses, 1)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, stat.SuccessfulWorkflows)
+	assert.Equal(t, 1, stat.SuccessfulProcesses)
 
-	time.Sleep(2 * time.Second)
-
-	stat, err = client.ColonyStatistics(colony.Name, executorPrvKey)
-	assert.Equal(t, stat.SuccessfulWorkflows, 0)
-	assert.Equal(t, stat.SuccessfulProcesses, 0)
+	// The retention worker deletes the process and workflow once they are
+	// older than the policy; poll instead of sleeping a fixed time so the
+	// test tolerates a slow leader election or database under load
+	assert.Eventually(t, func() bool {
+		stat, err := client.ColonyStatistics(colony.Name, executorPrvKey)
+		if err != nil {
+			return false
+		}
+		return stat.SuccessfulWorkflows == 0 && stat.SuccessfulProcesses == 0
+	}, 4*testRetentionPolicySeconds*time.Second, 250*time.Millisecond)
 
 	server.Shutdown()
 	<-done

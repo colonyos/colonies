@@ -1,6 +1,8 @@
 package server
 
 import (
+	"errors"
+	"net/http"
 	"testing"
 	"time"
 
@@ -29,20 +31,27 @@ func TestChannelEndToEndIntegration(t *testing.T) {
 	assert.Nil(t, err)
 	defer db.Close()
 
-	// Create server
-	port := 8081
+	// Create server. Ports stay reserved until just before each component
+	// binds so parallel test processes cannot be handed the same port
+	reserved := utils.ReservePortsOrPanic(4)
+	t.Cleanup(func() { utils.ReleasePorts(reserved) })
+	port := reserved[0].Port()
 	thisNode := cluster.Node{
 		Name:           "test-node",
 		Host:           "localhost",
 		APIPort:        port,
-		EtcdClientPort: 2379,
-		EtcdPeerPort:   2380,
-		RelayPort:      25100,
+		EtcdClientPort: reserved[1].Port(),
+		EtcdPeerPort:   reserved[2].Port(),
+		RelayPort:      reserved[3].Port(),
 	}
 	clusterConfig := cluster.Config{
 		Nodes: []cluster.Node{thisNode},
 	}
 
+	// CreateServer binds the etcd and relay ports
+	reserved[1].Release()
+	reserved[2].Release()
+	reserved[3].Release()
 	server := CreateServer(
 		db,
 		port,
@@ -51,7 +60,7 @@ func TestChannelEndToEndIntegration(t *testing.T) {
 		"",
 		thisNode,
 		clusterConfig,
-		"/tmp/test-etcd-"+time.Now().Format("20060102150405"), // etcd path in /tmp
+		t.TempDir(),
 		10,    // generator period
 		10,    // cron period
 		false, // exclusive assign
@@ -63,7 +72,15 @@ func TestChannelEndToEndIntegration(t *testing.T) {
 	)
 
 	// Start server in background
-	go server.ServeForever()
+	reserved[0].Release()
+	go func() {
+		err := server.ServeForever()
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			// A silent bind failure would leave the client talking to some
+			// other process's server; fail loudly instead
+			panic("test server failed to serve: " + err.Error())
+		}
+	}()
 	time.Sleep(500 * time.Millisecond) // Wait for server to start
 
 	// Create client
@@ -218,20 +235,27 @@ func TestChannelCleanupOnProcessFail(t *testing.T) {
 	assert.Nil(t, err)
 	defer db.Close()
 
-	// Create server
-	port := 8082
+	// Create server. Ports stay reserved until just before each component
+	// binds so parallel test processes cannot be handed the same port
+	reserved := utils.ReservePortsOrPanic(4)
+	t.Cleanup(func() { utils.ReleasePorts(reserved) })
+	port := reserved[0].Port()
 	thisNode := cluster.Node{
 		Name:           "test-node",
 		Host:           "localhost",
 		APIPort:        port,
-		EtcdClientPort: 2379,
-		EtcdPeerPort:   2380,
-		RelayPort:      25101,
+		EtcdClientPort: reserved[1].Port(),
+		EtcdPeerPort:   reserved[2].Port(),
+		RelayPort:      reserved[3].Port(),
 	}
 	clusterConfig := cluster.Config{
 		Nodes: []cluster.Node{thisNode},
 	}
 
+	// CreateServer binds the etcd and relay ports
+	reserved[1].Release()
+	reserved[2].Release()
+	reserved[3].Release()
 	server := CreateServer(
 		db,
 		port,
@@ -240,7 +264,7 @@ func TestChannelCleanupOnProcessFail(t *testing.T) {
 		"",
 		thisNode,
 		clusterConfig,
-		"/tmp/test-etcd-fail-"+time.Now().Format("20060102150405"),
+		t.TempDir(),
 		10,    // generator period
 		10,    // cron period
 		false, // exclusive assign
@@ -252,8 +276,16 @@ func TestChannelCleanupOnProcessFail(t *testing.T) {
 	)
 
 	// Start server in background
-	go server.ServeForever()
-	time.Sleep(500 * time.Millisecond)
+	reserved[0].Release()
+	go func() {
+		err := server.ServeForever()
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			// A silent bind failure would leave the client talking to some
+			// other process's server; fail loudly instead
+			panic("test server failed to serve: " + err.Error())
+		}
+	}()
+	time.Sleep(500 * time.Millisecond) // Wait for server to start
 
 	// Create client
 	colonies := client.CreateColoniesClient("localhost", port, true, true)

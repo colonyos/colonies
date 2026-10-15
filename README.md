@@ -141,7 +141,7 @@ The [Colonies Dashboard](https://github.com/colonyos/dashboard) provides a web U
 - [Executors](https://github.com/colonyos/executors) - Pre-built executor implementations
 
 ## Development
-The repository contains a development container configuration to simplify development environment setup. You can use it locally or in a [GitHub Codespace](https://docs.github.com/en/codespaces). The configuration will launch a TimescaleDB-insance for the ColonyOS database, a MinIO instance for the ColonyOS file system and the actual development container. It will automatically generate required credentials and keys unique to your environment, no furhter configuration needed. 
+The repository contains a development container configuration to simplify development environment setup. You can use it locally or in a [GitHub Codespace](https://docs.github.com/en/codespaces). It provides a Go toolchain with Docker-in-Docker, so the dependencies can be started inside the container: `make startdb` for TimescaleDB, `make starts3` for the SeaweedFS S3 server used by the file system, or `docker compose up -d` for the full Colonies stack.
 
 **Local Development (VS Code):**
 
@@ -168,10 +168,26 @@ For detailed instructions on building containers including multi-platform builds
 
 ### Testing
 
+The tests need a PostgreSQL server on `localhost:5432` and an S3 server on
+`localhost:9000`, both of which can be started with Docker:
+
 ```bash
+make startdb           # Start TimescaleDB
+make starts3           # Start SeaweedFS and print the AWS_S3_* variables to export
+```
+
+Export the `AWS_S3_*` variables printed by `make starts3` and set a timezone,
+then run the tests:
+
+```bash
+export TZ=Europe/Stockholm
 make test              # Run all tests
 make github_test       # Run tests for CI (no color output)
 ```
+
+Test packages use per-process databases and dynamic ports, so they run in
+parallel. To stress the suite under load, use for example
+`go test -race -count=10 -timeout 0 ./...`.
 
 ### Code Coverage
 

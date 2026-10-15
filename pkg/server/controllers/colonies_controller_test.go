@@ -13,7 +13,7 @@ import (
 )
 
 func TestColoniesControllerInvalidDB(t *testing.T) {
-	controller, dbMock := createFakeColoniesController()
+	controller, dbMock := createFakeColoniesController(t)
 
 	dbMock.ReturnError = "GetProcessByID"
 	err := controller.SubscribeProcess("invalid_id", &backends.RealtimeSubscription{})
@@ -38,7 +38,7 @@ func TestColoniesControllerAddProcess(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	controller := createTestColoniesController(db)
+	controller := createTestColoniesController(t, db)
 	defer controller.Stop()
 
 	colonyName := core.GenerateRandomID()
@@ -62,7 +62,7 @@ func TestColoniesControllerAssignExecutor(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	controller := createTestColoniesController(db)
+	controller := createTestColoniesController(t, db)
 	defer controller.Stop()
 
 	colonyName := core.GenerateRandomID()
@@ -93,9 +93,9 @@ func TestColoniesControllerAssignExecutorConcurrency(t *testing.T) {
 
 	processCount := 100
 
-	controller1 := createTestColoniesController(db)
+	controller1 := createTestColoniesController(t, db)
 	defer controller1.Stop()
-	controller2 := createTestColoniesController2(db)
+	controller2 := createTestColoniesController2(t, db)
 	defer controller2.Stop()
 
 	colonyName := core.GenerateRandomID()
@@ -151,7 +151,7 @@ func TestColoniesControllerAssignExecutorConcurrency(t *testing.T) {
 }
 
 func TestColoniesControllerPauseResumeAssignments(t *testing.T) {
-	controller, _ := createFakeColoniesController()
+	controller, _ := createFakeColoniesController(t)
 	defer controller.Stop()
 
 	colonyName := "test_colony"
@@ -175,7 +175,7 @@ func TestColoniesControllerPauseResumeAssignmentsWithEtcdServer(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	controller := createTestColoniesController(db)
+	controller := createTestColoniesController(t, db)
 	defer controller.Stop()
 
 	colonyName := "test_colony"
@@ -206,7 +206,7 @@ func TestColoniesControllerPauseResumeAssignmentsWithEtcdServer(t *testing.T) {
 
 // Test getter methods
 func TestColoniesControllerGetters(t *testing.T) {
-	controller, _ := createFakeColoniesController()
+	controller, _ := createFakeColoniesController(t)
 	defer controller.Stop()
 
 	// Test GetCronPeriod
@@ -233,7 +233,7 @@ func TestColoniesControllerGetters(t *testing.T) {
 
 // Test ProcessGraphStorage adapter
 func TestColoniesControllerProcessGraphStorage(t *testing.T) {
-	controller, dbMock := createFakeColoniesController()
+	controller, dbMock := createFakeColoniesController(t)
 	defer controller.Stop()
 
 	storage := controller.GetProcessGraphStorage()
@@ -278,7 +278,7 @@ func TestColoniesControllerProcessGraphStorage(t *testing.T) {
 
 // Test SubscribeProcesses method
 func TestColoniesControllerSubscribeProcesses(t *testing.T) {
-	controller, dbMock := createFakeColoniesController()
+	controller, dbMock := createFakeColoniesController(t)
 	defer controller.Stop()
 
 	subscription := &backends.RealtimeSubscription{}
@@ -300,7 +300,7 @@ func TestColoniesControllerProcessOperations(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	controller := createTestColoniesController(db)
+	controller := createTestColoniesController(t, db)
 	defer controller.Stop()
 
 	colonyName := core.GenerateRandomID()
@@ -320,7 +320,7 @@ func TestColoniesControllerProcessOperations(t *testing.T) {
 
 // Test more controller methods with mocks
 func TestColoniesControllerAdditionalMethods(t *testing.T) {
-	controller, _ := createFakeColoniesController()
+	controller, _ := createFakeColoniesController(t)
 	defer controller.Stop()
 
 	// Test IsLeader
@@ -332,7 +332,7 @@ func TestColoniesControllerAdditionalMethods(t *testing.T) {
 
 // Test error conditions and edge cases
 func TestColoniesControllerErrorHandling(t *testing.T) {
-	controller, _ := createFakeColoniesController()
+	controller, _ := createFakeColoniesController(t)
 	defer controller.Stop()
 
 	// Test nil process
@@ -342,7 +342,7 @@ func TestColoniesControllerErrorHandling(t *testing.T) {
 
 // Test websocket subscriptions with better error handling
 func TestColoniesControllerWebSocketHandling(t *testing.T) {
-	controller, dbMock := createFakeColoniesController()
+	controller, dbMock := createFakeColoniesController(t)
 	defer controller.Stop()
 
 	// Test SubscribeProcess with invalid process ID
@@ -366,7 +366,7 @@ func TestColoniesControllerProcessGraphOperations(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	controller := createTestColoniesController(db)
+	controller := createTestColoniesController(t, db)
 	defer controller.Stop()
 
 	// Test GetProcessGraphByID with non-existent ID
@@ -381,7 +381,7 @@ func TestColoniesControllerAssignmentOperations(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	controller := createTestColoniesController(db)
+	controller := createTestColoniesController(t, db)
 	defer controller.Stop()
 
 	colonyName := core.GenerateRandomID()
@@ -414,7 +414,7 @@ func TestColoniesControllerAssignmentOperations(t *testing.T) {
 
 // Test cron functionality with mocks
 func TestColoniesControllerCronOperations(t *testing.T) {
-	controller, dbMock := createFakeColoniesController()
+	controller, dbMock := createFakeColoniesController(t)
 	defer controller.Stop()
 
 	cronSpec := &core.Cron{
@@ -451,7 +451,7 @@ func TestColoniesControllerCronOperations(t *testing.T) {
 
 // Test generator functionality with mocks
 func TestColoniesControllerGeneratorOperations(t *testing.T) {
-	controller, dbMock := createFakeColoniesController()
+	controller, dbMock := createFakeColoniesController(t)
 	defer controller.Stop()
 
 	generator := &core.Generator{
@@ -479,7 +479,7 @@ func TestColoniesControllerProcessLifecycleOperations(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	controller := createTestColoniesController(db)
+	controller := createTestColoniesController(t, db)
 	defer controller.Stop()
 
 	colonyName := core.GenerateRandomID()
@@ -529,7 +529,7 @@ func TestColoniesControllerProcessGraphOperations2(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	controller := createTestColoniesController(db)
+	controller := createTestColoniesController(t, db)
 	defer controller.Stop()
 
 	colonyName := core.GenerateRandomID()
@@ -584,7 +584,7 @@ func TestColoniesControllerAssignmentOperations2(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	controller := createTestColoniesController(db)
+	controller := createTestColoniesController(t, db)
 	defer controller.Stop()
 
 	colonyName := core.GenerateRandomID()
@@ -623,7 +623,7 @@ func TestColoniesControllerAttributeOperations(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	controller := createTestColoniesController(db)
+	controller := createTestColoniesController(t, db)
 	defer controller.Stop()
 
 	colonyName := core.GenerateRandomID()
@@ -656,7 +656,7 @@ func TestColoniesControllerFunctionOperations(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	controller := createTestColoniesController(db)
+	controller := createTestColoniesController(t, db)
 	defer controller.Stop()
 
 	colonyName := core.GenerateRandomID()
@@ -691,7 +691,7 @@ func TestColoniesControllerDatabaseAndUtilityOperations(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	controller := createTestColoniesController(db)
+	controller := createTestColoniesController(t, db)
 	defer controller.Stop()
 
 	// Test ResetDatabase
@@ -701,7 +701,7 @@ func TestColoniesControllerDatabaseAndUtilityOperations(t *testing.T) {
 
 // Test additional methods with mocks - safer approach
 func TestColoniesControllerSafeMockTests(t *testing.T) {
-	controller, dbMock := createFakeColoniesController()
+	controller, dbMock := createFakeColoniesController(t)
 	defer controller.Stop()
 
 	// Test basic operations that are safe with mocks

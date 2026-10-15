@@ -10,45 +10,21 @@ services:
     volumes:
       - timescaledb_data:/var/lib/postgresql/data
 
-  minio:
-    image: minio/minio:latest
+  # S3-compatible object store for the Colonies file system. SeaweedFS mini
+  # mode seeds the access key, secret and bucket from the environment, serves
+  # S3 on 8333 and an admin UI on 23646
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.47
     environment:
-      MINIO_ROOT_USER: ${MINIO_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
+      AWS_ACCESS_KEY_ID: ${AWS_S3_ACCESSKEY}
+      AWS_SECRET_ACCESS_KEY: ${AWS_S3_SECRETKEY}
+      S3_BUCKET: ${AWS_S3_BUCKET}
     volumes:
-      - minio_data:/var/lib/minio/data
-    command: minio server /var/lib/minio/data --console-address :9001
+      - seaweedfs_data:/data
+    command: mini -dir=/data -admin.user=${S3_ADMIN_USER} -admin.password=${S3_ADMIN_PASSWORD}
     ports:
-      - "9000:9000"
-      - "9001:9001"
-
-  minio-setup:
-    image: minio/mc
-    depends_on:
-      - minio
-    environment:
-      AWS_S3_ENDPOINT: minio:9000
-      AWS_S3_ACCESSKEY: RrXN2vcLeHjBptG8a3Ay
-      AWS_S3_SECRETKEY: ivwLB0Luqomq65nNVmoo8fTBgxXgNvqYGC50VQN6
-      AWS_S3_REGION_KEY: ""
-      AWS_S3_BUCKET: colonies-prod
-      AWS_S3_TLS: "false"
-      AWS_S3_SKIPVERIFY: "false"
-      MINIO_USER: ${MINIO_USER}
-      MINIO_PASSWORD: ${MINIO_PASSWORD}
-    entrypoint: >
-      /bin/sh -c "
-      echo 'Executing: /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_USER} ${MINIO_PASSWORD}';
-      until (/usr/bin/mc alias set myminio http://minio:9000 ${MINIO_USER} ${MINIO_PASSWORD}); do echo 'Waiting for MinIO...'; sleep 3; done;
-      echo 'MinIO is ready. Setting up...';
-      echo 'Executing: /usr/bin/mc admin user add myminio ${AWS_S3_ACCESSKEY} ${AWS_S3_SECRETKEY}';
-      /usr/bin/mc admin user add myminio ${AWS_S3_ACCESSKEY} ${AWS_S3_SECRETKEY};
-      echo 'Executing: /usr/bin/mc admin policy attach myminio readwrite --user=${AWS_S3_ACCESSKEY}';
-      /usr/bin/mc admin policy attach myminio readwrite --user=${AWS_S3_ACCESSKEY};
-      echo 'Executing: /usr/bin/mc mb myminio/${AWS_S3_BUCKET}';
-      /usr/bin/mc mb myminio/${AWS_S3_BUCKET};
-      echo 'MinIO setup completed.';
-      "
+      - "9000:8333"
+      - "9001:23646"
 
   colonies-server:
     image: colonyos/colonies:v1.9.10
@@ -130,7 +106,7 @@ services:
       COLONIES_EXECUTOR_NAME: ${COLONIES_EXECUTOR_NAME:-dev-docker}
       AWS_S3_TLS: ${AWS_S3_TLS}
       AWS_S3_SKIPVERIFY: ${AWS_S3_SKIPVERIFY}
-      AWS_S3_ENDPOINT: minio:9000
+      AWS_S3_ENDPOINT: seaweedfs:8333
       AWS_S3_ACCESSKEY: ${AWS_S3_ACCESSKEY}
       AWS_S3_SECRETKEY: ${AWS_S3_SECRETKEY}
       AWS_S3_REGION_KEY: ${AWS_S3_REGION_KEY}
@@ -168,5 +144,5 @@ services:
 
 volumes:
   timescaledb_data:
-  minio_data:
+  seaweedfs_data:
   colonies_etcd:

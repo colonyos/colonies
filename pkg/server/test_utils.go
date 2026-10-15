@@ -2,11 +2,12 @@ package server
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"io/ioutil"
 	"math/rand"
-	"os"
+	"net/http"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -18,7 +19,6 @@ import (
 	"github.com/colonyos/colonies/pkg/database/postgresql"
 	"github.com/colonyos/colonies/pkg/rpc"
 	"github.com/colonyos/colonies/pkg/security/crypto"
-	"github.com/colonyos/colonies/pkg/server/controllers"
 	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
@@ -205,9 +205,32 @@ func prepareTests(t *testing.T) (*client.ColoniesClient, *Server, string, chan b
 	return prepareTestsWithRetention(t, false)
 }
 
+// Retention settings for test servers created with retention enabled. The
+// policy must leave enough room for a test to submit, assign, close and
+// inspect a process before it is deleted, even under heavy load (for example
+// go test -race -count=10 ./...), so it is much longer than the worker period.
+const (
+	testRetentionPolicySeconds = 5
+	testRetentionPeriodMillis  = 500
+)
+
+// Cron trigger period for single-node test servers. Production evaluates crons
+// once a second, which makes every cron test wait two to three seconds for the
+// first trigger. A shorter tick keeps the same semantics (the one second cron
+// interval is still the floor) while cutting the waiting to just over a second.
+const testCronPeriodMillis = 100
+
 func prepareTestsWithRetention(t *testing.T, retention bool) (*client.ColoniesClient, *Server, string, chan bool) {
-	os.RemoveAll("/tmp/colonies")
-	client := client.CreateColoniesClient(constants.TESTHOST, constants.TESTPORT, Insecure, SkipTLSVerify)
+	// Dynamic ports and a per-test etcd data directory allow test packages to
+	// run in parallel without colliding on fixed ports or /tmp/colonies. The
+	// ports stay reserved until just before each component binds, so parallel
+	// test processes cannot be handed the same port during the slow parts of
+	// the setup (database preparation, etcd startup).
+	reserved := utils.ReservePortsOrPanic(4)
+	apiPort, etcdClientPort, etcdPeerPort, relayPort := reserved[0].Port(), reserved[1].Port(), reserved[2].Port(), reserved[3].Port()
+	etcdDataPath := t.TempDir()
+
+	client := client.CreateColoniesClient(constants.TESTHOST, apiPort, Insecure, SkipTLSVerify)
 
 	db, err := postgresql.PrepareTests()
 	assert.Nil(t, err)
@@ -221,33 +244,46 @@ func prepareTestsWithRetention(t *testing.T, retention bool) (*client.ColoniesCl
 	err = db.SetServerID("", serverID)
 	assert.Nil(t, err)
 
-	node := cluster.Node{Name: "etcd", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: constants.TESTPORT}
+	node := cluster.Node{Name: "etcd", Host: "localhost", EtcdClientPort: etcdClientPort, EtcdPeerPort: etcdPeerPort, RelayPort: relayPort, APIPort: apiPort}
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
-	server := CreateServer(db, constants.TESTPORT, EnableTLS, "", "", node, clusterConfig, "/tmp/colonies/etcd", constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, false, retention, 1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second)
+	reserved[1].Release()
+	reserved[2].Release()
+	reserved[3].Release()
+	server := CreateServer(db, apiPort, EnableTLS, "", "", node, clusterConfig, etcdDataPath, constants.GENERATOR_TRIGGER_PERIOD, testCronPeriodMillis, false, false, retention, testRetentionPolicySeconds, testRetentionPeriodMillis, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second)
 
 	done := make(chan bool)
+	reserved[0].Release()
 	go func() {
-		server.ServeForever()
+		err := server.ServeForever()
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			// A silent bind failure would leave the client talking to some
+			// other process's server; fail loudly instead
+			panic("test server failed to serve: " + err.Error())
+		}
 		db.Close()
 		done <- true
 	}()
 
+	waitForServer(t, client)
+
 	return client, server, serverPrvKey, done
 }
 
-func createTestColoniesController(db database.Database) *controllers.ColoniesController {
-	node := cluster.Node{Name: "etcd", Host: "localhost", EtcdClientPort: 24100, EtcdPeerPort: 23100, RelayPort: 25100, APIPort: constants.TESTPORT}
-	clusterConfig := cluster.Config{}
-	clusterConfig.AddNode(node)
-	return controllers.CreateColoniesController(db, node, clusterConfig, "/tmp/colonies/etcd", constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, -1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second)
-}
-
-func createTestColoniesController2(db database.Database) *controllers.ColoniesController {
-	node := cluster.Node{Name: "etcd2", Host: "localhost", EtcdClientPort: 26100, EtcdPeerPort: 27100, RelayPort: 28100, APIPort: constants.TESTPORT}
-	clusterConfig := cluster.Config{}
-	clusterConfig.AddNode(node)
-	return controllers.CreateColoniesController(db, node, clusterConfig, "/tmp/colonies/etcd", constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, -1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second)
+// waitForServer blocks until the test server answers health checks. The server
+// listens in a goroutine, so without this a test on a loaded machine can send
+// its first request before the port is bound and fail with a connection error.
+func waitForServer(t *testing.T, client *client.ColoniesClient) {
+	deadline := time.Now().Add(30 * time.Second)
+	var err error
+	for time.Now().Before(deadline) {
+		err = client.CheckHealth()
+		if err == nil {
+			return
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	t.Fatalf("test server did not become ready: %v", err)
 }
 
 func GenerateDiamondtWorkflowSpec(colonyName string) *core.WorkflowSpec {
@@ -371,71 +407,34 @@ type ServerInfo struct {
 }
 
 func StartCluster(t *testing.T, db database.Database, size int) []ServerInfo {
-	os.RemoveAll("/tmp/colonies")
-	gin.SetMode(gin.ReleaseMode)
-	gin.DefaultWriter = ioutil.Discard
-
-	clusterConfig := cluster.Config{}
-	for i := 0; i < size; i++ {
-		node := cluster.Node{
-			Name:           "etcd" + strconv.Itoa(i),
-			Host:           "localhost",
-			EtcdClientPort: 21000 + i,
-			EtcdPeerPort:   22000 + i,
-			RelayPort:      23000 + i,
-			APIPort:        24000 + i}
-		clusterConfig.AddNode(node)
-	}
-
-	crypto := crypto.CreateCrypto()
-	serverPrvKey, err := crypto.GeneratePrivateKey()
-	assert.Nil(t, err)
-	serverID, err := crypto.GenerateID(serverPrvKey)
-	assert.Nil(t, err)
-
-	db.SetServerID("", serverID)
-
-	sChan := make(chan ServerInfo)
-	for i, node := range clusterConfig.Nodes {
-		go func(i int, node cluster.Node) {
-			log.WithFields(log.Fields{"APIPort": node.APIPort}).Info("Starting ColoniesServer")
-			server := CreateServer(db, node.APIPort, false, "", "", node, clusterConfig, "/tmp/colonies/etcd"+strconv.Itoa(i), constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, true, false, false, -1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second)
-			done := make(chan struct{})
-			s := ServerInfo{ServerID: serverID, ServerPrvKey: serverPrvKey, Server: server, Node: node, Done: done}
-			go func(i int) {
-				log.Info("ColoniesServer serving")
-				server.ServeForever()
-				log.Info("ColoniesServer stopped")
-				done <- struct{}{}
-			}(i)
-			sChan <- s
-		}(i, node)
-	}
-
-	var servers []ServerInfo
-	for range clusterConfig.Nodes {
-		s := <-sChan
-		servers = append(servers, s)
-	}
-
-	return servers
+	return startCluster(t, db, size, true)
 }
 
 // StartClusterDistributed creates a cluster with ExclusiveAssign=false for testing distributed assignment
 func StartClusterDistributed(t *testing.T, db database.Database, size int) []ServerInfo {
-	os.RemoveAll("/tmp/colonies")
+	return startCluster(t, db, size, false)
+}
+
+func startCluster(t *testing.T, db database.Database, size int, exclusiveAssign bool) []ServerInfo {
 	gin.SetMode(gin.ReleaseMode)
 	gin.DefaultWriter = ioutil.Discard
+
+	etcdDataPath := t.TempDir()
+
+	// Ports stay reserved until just before each component binds so parallel
+	// test processes cannot be handed the same port while the cluster starts
+	reserved := utils.ReservePortsOrPanic(4 * size)
+	t.Cleanup(func() { utils.ReleasePorts(reserved) })
 
 	clusterConfig := cluster.Config{}
 	for i := 0; i < size; i++ {
 		node := cluster.Node{
 			Name:           "etcd" + strconv.Itoa(i),
 			Host:           "localhost",
-			EtcdClientPort: 21000 + i,
-			EtcdPeerPort:   22000 + i,
-			RelayPort:      23000 + i,
-			APIPort:        24000 + i}
+			EtcdClientPort: reserved[4*i].Port(),
+			EtcdPeerPort:   reserved[4*i+1].Port(),
+			RelayPort:      reserved[4*i+2].Port(),
+			APIPort:        reserved[4*i+3].Port()}
 		clusterConfig.AddNode(node)
 	}
 
@@ -451,13 +450,22 @@ func StartClusterDistributed(t *testing.T, db database.Database, size int) []Ser
 	for i, node := range clusterConfig.Nodes {
 		go func(i int, node cluster.Node) {
 			log.WithFields(log.Fields{"APIPort": node.APIPort}).Info("Starting ColoniesServer")
-			// ExclusiveAssign=false for distributed assignment
-			server := CreateServer(db, node.APIPort, false, "", "", node, clusterConfig, "/tmp/colonies/etcd"+strconv.Itoa(i), constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, false, false, -1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second)
+			// CreateServer binds the etcd and relay ports
+			reserved[4*i].Release()
+			reserved[4*i+1].Release()
+			reserved[4*i+2].Release()
+			server := CreateServer(db, node.APIPort, false, "", "", node, clusterConfig, etcdDataPath+"/etcd"+strconv.Itoa(i), constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, exclusiveAssign, false, false, -1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second)
 			done := make(chan struct{})
 			s := ServerInfo{ServerID: serverID, ServerPrvKey: serverPrvKey, Server: server, Node: node, Done: done}
+			reserved[4*i+3].Release()
 			go func(i int) {
 				log.Info("ColoniesServer serving")
-				server.ServeForever()
+				err := server.ServeForever()
+				if err != nil && !errors.Is(err, http.ErrServerClosed) {
+					// A silent bind failure would let WaitForCluster count
+					// another process's server as ours; fail loudly instead
+					panic("cluster server " + strconv.Itoa(i) + " failed to serve: " + err.Error())
+				}
 				log.Info("ColoniesServer stopped")
 				done <- struct{}{}
 			}(i)
@@ -474,22 +482,22 @@ func StartClusterDistributed(t *testing.T, db database.Database, size int) []Ser
 	return servers
 }
 
+// WaitForCluster blocks until every server in the cluster answers health
+// checks in the same pass, so one healthy node polled repeatedly cannot
+// satisfy the wait on behalf of nodes that are still starting.
 func WaitForCluster(t *testing.T, cluster []ServerInfo) {
-	serverReady := 0
 	for {
+		serverReady := 0
 		for _, s := range cluster {
 			client := client.CreateColoniesClient("localhost", s.Node.APIPort, true, true)
-			err := client.CheckHealth()
-			if err == nil {
+			if err := client.CheckHealth(); err == nil {
 				serverReady++
-			} else {
-				time.Sleep(50 * time.Millisecond)
-				fmt.Println(err)
-			}
-			if serverReady == len(cluster) {
-				return
 			}
 		}
+		if serverReady == len(cluster) {
+			return
+		}
+		time.Sleep(50 * time.Millisecond)
 	}
 }
 
@@ -505,18 +513,35 @@ func WaitForServerToDie(t *testing.T, s ServerInfo) {
 	}
 }
 
+// transientProcessGraphError is the message the server returns when a graph is
+// visible before all of its processes are. CreateProcessGraph inserts the graph
+// first, so a poll can briefly land in that window; the assignment path retries
+// graph resolution for the same reason.
+const transientProcessGraphError = "Failed to iterate processgraph, process with ID="
+
+// WaitForProcessGraphs polls until at least threshold waiting process graphs
+// exist or the deadline passes, and returns the number of graphs seen on the
+// last poll. The transient missing-process error is retried until the deadline;
+// any other error fails the test immediately.
 func WaitForProcessGraphs(t *testing.T, c *client.ColoniesClient, colonyName string, generatorID string, executorPrvKey string, threshold int) int {
 	var graphs []*core.ProcessGraph
 	var err error
-	retries := 40
-	for i := 0; i < retries; i++ {
+	deadline := time.Now().Add(40 * time.Second)
+	for {
 		graphs, err = c.GetWaitingProcessGraphs(colonyName, 100, executorPrvKey)
-		assert.Nil(t, err)
-		if len(graphs) >= threshold {
+		if err != nil && !strings.Contains(err.Error(), transientProcessGraphError) {
+			assert.Nil(t, err)
+			break
+		}
+		if err == nil && len(graphs) >= threshold {
+			break
+		}
+		if time.Now().After(deadline) {
+			assert.Nil(t, err, "process graphs still not consistent at deadline")
 			break
 		}
 
-		time.Sleep(1 * time.Second)
+		time.Sleep(50 * time.Millisecond)
 	}
 
 	return len(graphs)

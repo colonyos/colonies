@@ -5,10 +5,30 @@ import (
 	"testing"
 	"time"
 
+	"github.com/colonyos/colonies/pkg/client"
+	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/server"
 	"github.com/colonyos/colonies/pkg/utils"
 	"github.com/stretchr/testify/assert"
 )
+
+// cronSettleTime is how long a test waits after the cron has fired to make
+// sure it does not fire again. It covers the one second cron interval used by
+// the tests plus a few trigger periods of slack.
+const cronSettleTime = 1500 * time.Millisecond
+
+// waitForWaitingProcesses polls until the colony has exactly n waiting
+// processes and returns their IDs. Polling instead of sleeping a fixed time
+// keeps the tests fast and tolerant of a slow machine.
+func waitForWaitingProcesses(t *testing.T, client *client.ColoniesClient, env *server.TestEnv2, n int) []*core.Process {
+	var processes []*core.Process
+	assert.Eventually(t, func() bool {
+		var err error
+		processes, err = client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+		return err == nil && len(processes) == n
+	}, 10*time.Second, 100*time.Millisecond, "expected %d waiting processes, got %d", n, len(processes))
+	return processes
+}
 
 func TestAddCronDebug(t *testing.T) {
 	env, client, server, _, done := server.SetupTestEnv2(t)
@@ -40,7 +60,7 @@ func TestAddCronRemoveAllProcesses(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, addedCron)
 
-	time.Sleep(2 * time.Second)
+	waitForWaitingProcesses(t, client, env, 2) // The workflow has two tasks
 
 	err = client.RemoveAllProcesses(env.ColonyName, env.ColonyPrvKey)
 	assert.Nil(t, err)
@@ -65,7 +85,7 @@ func TestAddCronRemoveAllProcessGraphs(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, addedCron)
 
-	time.Sleep(2 * time.Second)
+	waitForWaitingProcesses(t, client, env, 2) // The workflow has two tasks
 
 	err = client.RemoveAllProcessGraphs(env.ColonyName, env.ColonyPrvKey)
 	assert.Nil(t, err)
@@ -117,10 +137,12 @@ func TestAddCronWaitForPrevProcessGraph(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, addedCron)
 
-	// Wait for 5 seconds, we should only have 1 cron workflow since WaitForPrevProcessGraph is true
-	time.Sleep(5 * time.Second)
+	// Wait for the first cron workflow, then give the cron a chance to
+	// misbehave: there should still be only one since WaitForPrevProcessGraph is true
+	processes := waitForWaitingProcesses(t, client, env, 1)
+	time.Sleep(cronSettleTime)
 
-	processes, err := client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	processes, err = client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processes, 1)
 
@@ -137,7 +159,9 @@ func TestAddCronWaitForPrevProcessGraph(t *testing.T) {
 	err = client.Close(process.ID, env.ExecutorPrvKey)
 	assert.Nil(t, err)
 
-	time.Sleep(5 * time.Second)
+	// The next cron workflow may only start now that the previous one finished
+	processes = waitForWaitingProcesses(t, client, env, 1)
+	time.Sleep(cronSettleTime)
 
 	processes, err = client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
 	assert.Nil(t, err)
@@ -168,10 +192,12 @@ func TestAddCronWaitForPrevProcessGraphFail(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, addedCron)
 
-	// Wait for 5 seconds, we should only have 1 cron workflow since WaitForPrevProcessGraph is true
-	time.Sleep(5 * time.Second)
+	// Wait for the first cron workflow, then give the cron a chance to
+	// misbehave: there should still be only one since WaitForPrevProcessGraph is true
+	processes := waitForWaitingProcesses(t, client, env, 1)
+	time.Sleep(cronSettleTime)
 
-	processes, err := client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
+	processes, err = client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
 	assert.Nil(t, err)
 	assert.Len(t, processes, 1)
 
@@ -188,7 +214,9 @@ func TestAddCronWaitForPrevProcessGraphFail(t *testing.T) {
 	err = client.Fail(process.ID, []string{""}, env.ExecutorPrvKey)
 	assert.Nil(t, err)
 
-	time.Sleep(5 * time.Second)
+	// The next cron workflow may only start now that the previous one finished
+	processes = waitForWaitingProcesses(t, client, env, 1)
+	time.Sleep(cronSettleTime)
 
 	processes, err = client.GetWaitingProcesses(env.ColonyName, "", "", "", 100, env.ExecutorPrvKey)
 	assert.Nil(t, err)
@@ -559,9 +587,9 @@ func TestAddCronRandomWithCronExpression(t *testing.T) {
 	env, client, server, _, done := server.SetupTestEnv2(t)
 
 	cron := utils.FakeCron(t, env.ColonyName, env.ExecutorID, env.ExecutorName)
-	cron.Interval = -1                     // Use cron expression
-	cron.CronExpression = "0/1 * * * * *"  // Every second
-	cron.Random = true                     // Invalid with cron expression
+	cron.Interval = -1                    // Use cron expression
+	cron.CronExpression = "0/1 * * * * *" // Every second
+	cron.Random = true                    // Invalid with cron expression
 
 	_, err := client.AddCron(cron, env.ExecutorPrvKey)
 	assert.NotNil(t, err)

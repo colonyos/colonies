@@ -15,7 +15,7 @@ func TestCleanupStaleExecutors_SkipsZeroLastHeardFrom(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	controller := createTestColoniesController(db)
+	controller := createTestColoniesController(t, db)
 	defer controller.Stop()
 
 	colonyName := core.GenerateRandomID()
@@ -49,7 +49,7 @@ func TestCleanupStaleExecutors_RemovesStaleExecutor(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	controller := createTestColoniesController(db)
+	controller := createTestColoniesController(t, db)
 	defer controller.Stop()
 
 	colonyName := core.GenerateRandomID()
@@ -92,7 +92,7 @@ func TestCleanupStaleExecutors_KeepsRecentExecutor(t *testing.T) {
 	defer db.Close()
 	assert.Nil(t, err)
 
-	controller := createTestColoniesController(db)
+	controller := createTestColoniesController(t, db)
 	defer controller.Stop()
 
 	colonyName := core.GenerateRandomID()

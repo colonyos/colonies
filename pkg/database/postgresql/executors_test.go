@@ -1,6 +1,7 @@
 package postgresql
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -194,8 +195,11 @@ func TestAddDuplicateExecutorConcurrentRejected(t *testing.T) {
 			successCount++
 		} else {
 			failureCount++
-			// All failures should be "already exists" errors
-			assert.Contains(t, err.Error(), "already exists")
+			// A loser either fails the name pre-check ("already exists") or,
+			// if it passed the check before the winner committed, the unique
+			// constraint ("not unique"); both are correct rejections
+			msg := err.Error()
+			assert.True(t, strings.Contains(msg, "already exists") || strings.Contains(msg, "not unique"), msg)
 		}
 	}
 
@@ -945,4 +949,3 @@ func TestChangeExecutorID(t *testing.T) {
 
 	defer db.Close()
 }
-
