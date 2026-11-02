@@ -233,8 +233,12 @@ func testClusterEnabled() bool {
 }
 
 func prepareTestsWithRetention(t *testing.T, retention bool) (*client.ColoniesClient, *Server, string, chan bool) {
-	clusterEnabled := testClusterEnabled()
+	return prepareTestsWithOptions(t, retention, testClusterEnabled())
+}
 
+// prepareTestsWithOptions starts a test server with the given retention and
+// clustering settings, regardless of COLONIES_TEST_CLUSTER.
+func prepareTestsWithOptions(t *testing.T, retention bool, clusterEnabled bool) (*client.ColoniesClient, *Server, string, chan bool) {
 	// Dynamic ports and a per-test etcd data directory allow test packages to
 	// run in parallel without colliding on fixed ports or /tmp/colonies. The
 	// ports stay reserved until just before each component binds, so parallel

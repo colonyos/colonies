@@ -249,17 +249,17 @@ func (c *processControllerAdapter) IsLeader() bool {
 	return c.controller.IsLeader()
 }
 
-func (c *processControllerAdapter) GetEtcdServer() process.EtcdServer {
+func (c *processControllerAdapter) GetCoordinator() process.Coordinator {
 	coordinator := c.controller.GetCoordinator()
-	return &etcdServerAdapter{coordinator: coordinator}
+	return &coordinatorAdapter{coordinator: coordinator}
 }
 
-type etcdServerAdapter struct {
+type coordinatorAdapter struct {
 	coordinator cluster.Coordinator
 }
 
-func (e *etcdServerAdapter) CurrentCluster() process.Cluster {
-	clusterConfig := e.coordinator.CurrentCluster()
+func (a *coordinatorAdapter) CurrentCluster() process.Cluster {
+	clusterConfig := a.coordinator.CurrentCluster()
 	return &clusterAdapter{cluster: &clusterConfig}
 }
 
@@ -470,17 +470,17 @@ type serverControllerAdapter struct {
 	}
 }
 
-func (c *serverControllerAdapter) GetEtcdServer() serverhandlers.EtcdServer {
+func (c *serverControllerAdapter) GetCoordinator() serverhandlers.Coordinator {
 	coordinator := c.controller.GetCoordinator()
-	return &serverEtcdServerAdapter{coordinator: coordinator}
+	return &serverCoordinatorAdapter{coordinator: coordinator}
 }
 
-type serverEtcdServerAdapter struct {
+type serverCoordinatorAdapter struct {
 	coordinator cluster.Coordinator
 }
 
-func (e *serverEtcdServerAdapter) CurrentCluster() cluster.Config {
-	return e.coordinator.CurrentCluster()
+func (a *serverCoordinatorAdapter) CurrentCluster() cluster.Config {
+	return a.coordinator.CurrentCluster()
 }
 
 func (s *ServerAdapter) ServerController() serverhandlers.Controller {

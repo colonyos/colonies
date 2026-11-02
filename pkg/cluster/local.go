@@ -10,7 +10,9 @@ import (
 // provides in-process semantics:
 //   - the local node is always the leader;
 //   - the cluster is a singleton;
-//   - assignments-paused flags live in memory.
+//   - assignments-paused flags live in memory, so unlike the etcd Coordinator
+//     a paused colony resumes assignments when the server restarts. This is
+//     documented in docs/Configuration.md.
 //
 // The in-memory coordination state is only correct for a single server
 // process. Deployments with more than one Colonies server sharing a database

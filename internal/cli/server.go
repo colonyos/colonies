@@ -28,7 +28,7 @@ func init() {
 	chServerIDCmd.MarkFlagRequired("serverid")
 
 	serverCmd.PersistentFlags().StringVarP(&DBType, "dbtype", "", "postgresql", "Database type")
-	serverCmd.PersistentFlags().BoolVarP(&ClusterEnabled, "cluster", "", true, "Enable etcd-based clustering (disable for single-node deployments, can also use COLONIES_CLUSTER)")
+	serverCmd.PersistentFlags().BoolVarP(&ClusterEnabled, "cluster", "", true, "Enable etcd-based clustering (disable for single-node deployments, can also use COLONIES_CLUSTER; when disabled, paused assignments do not survive a restart)")
 	serverCmd.PersistentFlags().StringVarP(&DBHost, "dbhost", "", "", "Colonies database host")
 	serverCmd.PersistentFlags().IntVarP(&DBPort, "dbport", "", DefaultDBPort, "Colonies database port")
 	serverCmd.PersistentFlags().StringVarP(&DBUser, "dbuser", "", "", "Colonies database user")
@@ -141,28 +141,18 @@ var serverStartCmd = &cobra.Command{
 	Short: "Start a production server",
 	Long:  "Start a production server",
 	Run: func(cmd *cobra.Command, args []string) {
+		// parseEnv applies COLONIES_CLUSTER; an explicit --cluster flag takes
+		// precedence over the environment variable.
+		clusterFlag := ClusterEnabled
 		parseDBEnv()
 		parseEnv()
-
-		// Clustering can be disabled with COLONIES_CLUSTER for single-node
-		// deployments. An explicit --cluster flag takes precedence over the
-		// environment variable.
-		if clusterStr := os.Getenv("COLONIES_CLUSTER"); clusterStr != "" && !cmd.Flags().Changed("cluster") {
-			clusterEnabled, err := strconv.ParseBool(clusterStr)
-			if err != nil {
-				CheckError(errors.New("Invalid COLONIES_CLUSTER value: " + clusterStr + " (expected true or false)"))
-			}
-			ClusterEnabled = clusterEnabled
-			log.WithField("ClusterEnabled", ClusterEnabled).Info("Using COLONIES_CLUSTER from environment")
+		if cmd.Flags().Changed("cluster") {
+			ClusterEnabled = clusterFlag
 		}
 
 		if !ClusterEnabled && len(EtcdCluster) > 0 {
 			CheckError(errors.New("--initial-cluster cannot be combined with clustering disabled (--cluster=false / COLONIES_CLUSTER=false)"))
 		}
-
-		log.WithFields(log.Fields{
-			"ClusterEnabled": ClusterEnabled,
-		}).Info("Cluster configuration check")
 
 		// Read HTTP server configuration from environment if not set via flags
 		if ServerPort == -1 {
@@ -276,6 +266,9 @@ var serverStartCmd = &cobra.Command{
 		}).Info("Database connection established")
 
 		node := cluster.Node{Name: EtcdName, Host: EtcdHost, APIPort: ServerPort, EtcdClientPort: EtcdClientPort, EtcdPeerPort: EtcdPeerPort, RelayPort: RelayPort}
+		if !ClusterEnabled {
+			node.EtcdClientPort, node.EtcdPeerPort, node.RelayPort = 0, 0, 0
+		}
 		clusterConfig := cluster.Config{}
 
 		if len(EtcdCluster) > 0 {
@@ -327,7 +320,7 @@ var serverStartCmd = &cobra.Command{
 			}
 		}
 
-		log.Info("Starting HTTP server")
+		log.WithFields(log.Fields{"ClusterEnabled": ClusterEnabled, "Port": ServerPort}).Info("Starting HTTP server")
 		startServer(db, node, clusterConfig, ClusterEnabled, EtcdDataDir)
 	},
 }
@@ -357,4 +350,3 @@ var serverAliveCmd = &cobra.Command{
 		os.Exit(0)
 	},
 }
-

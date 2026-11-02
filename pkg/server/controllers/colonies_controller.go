@@ -113,7 +113,6 @@ type ColoniesController struct {
 	leaderMutex      sync.Mutex
 	thisNode         cluster.Node
 	clusterConfig    cluster.Config
-	clusterEnabled   bool
 	coordinator      cluster.Coordinator
 	leader           bool
 	generatorPeriod  int
@@ -161,7 +160,6 @@ func CreateColoniesController(db database.Database,
 	controller.securityDB = db
 	controller.thisNode = thisNode
 	controller.clusterConfig = clusterConfig
-	controller.clusterEnabled = clusterEnabled
 	if clusterEnabled {
 		controller.coordinator = cluster.CreateEtcdServer(controller.thisNode, controller.clusterConfig, etcdDataPath)
 		controller.coordinator.Start()
@@ -209,13 +207,6 @@ func (controller *ColoniesController) GetCronPeriod() int {
 
 func (controller *ColoniesController) GetGeneratorPeriod() int {
 	return controller.generatorPeriod
-}
-
-func (controller *ColoniesController) GetEtcdServer() *cluster.EtcdServer {
-	if etcdServer, ok := controller.coordinator.(*cluster.EtcdServer); ok {
-		return etcdServer
-	}
-	return nil
 }
 
 // GetCoordinator returns the cluster coordinator, regardless of whether

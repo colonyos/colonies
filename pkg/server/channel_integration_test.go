@@ -60,7 +60,7 @@ func TestChannelEndToEndIntegration(t *testing.T) {
 		"",
 		thisNode,
 		clusterConfig,
-		true,  // clustering enabled: this test exercises etcd maintenance behavior
+		true, // clustering enabled: this test exercises etcd maintenance behavior
 		t.TempDir(),
 		10,    // generator period
 		10,    // cron period
@@ -265,7 +265,7 @@ func TestChannelCleanupOnProcessFail(t *testing.T) {
 		"",
 		thisNode,
 		clusterConfig,
-		true,  // clustering enabled: this test exercises etcd maintenance behavior
+		true, // clustering enabled: this test exercises etcd maintenance behavior
 		t.TempDir(),
 		10,    // generator period
 		10,    // cron period

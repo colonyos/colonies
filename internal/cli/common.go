@@ -262,6 +262,15 @@ func parseEnv() {
 	DBUser = os.Getenv("COLONIES_DB_USER")
 	DBPassword = os.Getenv("COLONIES_DB_PASSWORD")
 
+	ClusterEnvStr := os.Getenv("COLONIES_CLUSTER")
+	if ClusterEnvStr != "" {
+		ClusterEnabled, err = strconv.ParseBool(ClusterEnvStr)
+		if err != nil {
+			log.Error("Failed to parse COLONIES_CLUSTER")
+		}
+		CheckError(err)
+	}
+
 	AllowExecutorReregisterStr := os.Getenv("COLONIES_ALLOW_EXECUTOR_REREGISTER")
 	if AllowExecutorReregisterStr != "" {
 		AllowExecutorReregister, err = strconv.ParseBool(AllowExecutorReregisterStr)
