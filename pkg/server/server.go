@@ -111,6 +111,7 @@ func CreateServer(db database.Database,
 	tlsCertPath string,
 	thisNode cluster.Node,
 	clusterConfig cluster.Config,
+	clusterEnabled bool,
 	etcdDataPath string,
 	generatorPeriod int,
 	cronPeriod int,
@@ -120,7 +121,7 @@ func CreateServer(db database.Database,
 	retentionPolicy int64,
 	retentionPeriod int,
 	staleExecutorDuration time.Duration) *Server {
-	return createServerInternal(db, port, tls, tlsPrivateKeyPath, tlsCertPath, thisNode, clusterConfig, etcdDataPath, generatorPeriod, cronPeriod, exclusiveAssign, allowExecutorReregister, retention, retentionPolicy, retentionPeriod, staleExecutorDuration)
+	return createServerInternal(db, port, tls, tlsPrivateKeyPath, tlsCertPath, thisNode, clusterConfig, clusterEnabled, etcdDataPath, generatorPeriod, cronPeriod, exclusiveAssign, allowExecutorReregister, retention, retentionPolicy, retentionPeriod, staleExecutorDuration)
 }
 
 func createServerInternal(db database.Database,
@@ -130,6 +131,7 @@ func createServerInternal(db database.Database,
 	tlsCertPath string,
 	thisNode cluster.Node,
 	clusterConfig cluster.Config,
+	clusterEnabled bool,
 	etcdDataPath string,
 	generatorPeriod int,
 	cronPeriod int,
@@ -163,7 +165,7 @@ func createServerInternal(db database.Database,
 	server.securityDB = db
 	server.locationDB = db
 
-	server.controller = controllers.CreateColoniesController(db, thisNode, clusterConfig, etcdDataPath, generatorPeriod, cronPeriod, retention, retentionPolicy, retentionPeriod, staleExecutorDuration)
+	server.controller = controllers.CreateColoniesController(db, thisNode, clusterConfig, clusterEnabled, etcdDataPath, generatorPeriod, cronPeriod, retention, retentionPolicy, retentionPeriod, staleExecutorDuration)
 
 	server.tls = tls
 	server.port = port

@@ -63,6 +63,14 @@ jobs:
         COLONIES_DB_PASSWORD: rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7
         COLONIES_DB_HOST: localhost
 
+    # Server tests again with clustering disabled
+    - name: Test single-node
+      run: TZ=Europe/Stockholm make test-single-node
+      env:
+        COLONIES_DB_USER: postgres
+        COLONIES_DB_PASSWORD: rFcLGNkgsNtksg6Pgtn9CumL4xXBQ7
+        COLONIES_DB_HOST: localhost
+
     # Coverage runs the suite a second time, so it is limited to pushes to main
     # and skipped on dev pushes and pull requests to keep those runs fast
     - name: Generate coverage

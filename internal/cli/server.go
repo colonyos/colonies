@@ -27,7 +27,8 @@ func init() {
 	chServerIDCmd.Flags().StringVarP(&TargetServerID, "serverid", "", "", "Server Id")
 	chServerIDCmd.MarkFlagRequired("serverid")
 
-	serverCmd.PersistentFlags().StringVarP(&DBType, "dbtype", "", "postgresql", "Database type (postgresql or velocitydb)")
+	serverCmd.PersistentFlags().StringVarP(&DBType, "dbtype", "", "postgresql", "Database type")
+	serverCmd.PersistentFlags().BoolVarP(&ClusterEnabled, "cluster", "", true, "Enable etcd-based clustering (disable for single-node deployments, can also use COLONIES_CLUSTER; when disabled, paused assignments do not survive a restart)")
 	serverCmd.PersistentFlags().StringVarP(&DBHost, "dbhost", "", "", "Colonies database host")
 	serverCmd.PersistentFlags().IntVarP(&DBPort, "dbport", "", DefaultDBPort, "Colonies database port")
 	serverCmd.PersistentFlags().StringVarP(&DBUser, "dbuser", "", "", "Colonies database user")
@@ -57,6 +58,7 @@ func startServer(
 	db database.Database,
 	node cluster.Node,
 	clusterConfig cluster.Config,
+	clusterEnabled bool,
 	etcdDataPath string,
 ) {
 	retentionPeriod := 60000 // Run retention worker once a minute
@@ -72,6 +74,7 @@ func startServer(
 		TLSCert,
 		node,
 		clusterConfig,
+		clusterEnabled,
 		etcdDataPath,
 		GeneratorCheckerPeriod,
 		CronCheckerPeriod,
@@ -138,8 +141,18 @@ var serverStartCmd = &cobra.Command{
 	Short: "Start a production server",
 	Long:  "Start a production server",
 	Run: func(cmd *cobra.Command, args []string) {
+		// parseEnv applies COLONIES_CLUSTER; an explicit --cluster flag takes
+		// precedence over the environment variable.
+		clusterFlag := ClusterEnabled
 		parseDBEnv()
 		parseEnv()
+		if cmd.Flags().Changed("cluster") {
+			ClusterEnabled = clusterFlag
+		}
+
+		if !ClusterEnabled && len(EtcdCluster) > 0 {
+			CheckError(errors.New("--initial-cluster cannot be combined with clustering disabled (--cluster=false / COLONIES_CLUSTER=false)"))
+		}
 
 		// Read HTTP server configuration from environment if not set via flags
 		if ServerPort == -1 {
@@ -253,6 +266,9 @@ var serverStartCmd = &cobra.Command{
 		}).Info("Database connection established")
 
 		node := cluster.Node{Name: EtcdName, Host: EtcdHost, APIPort: ServerPort, EtcdClientPort: EtcdClientPort, EtcdPeerPort: EtcdPeerPort, RelayPort: RelayPort}
+		if !ClusterEnabled {
+			node.EtcdClientPort, node.EtcdPeerPort, node.RelayPort = 0, 0, 0
+		}
 		clusterConfig := cluster.Config{}
 
 		if len(EtcdCluster) > 0 {
@@ -285,7 +301,7 @@ var serverStartCmd = &cobra.Command{
 			clusterConfig.AddNode(node)
 		}
 
-		if EtcdDataDir == "" {
+		if EtcdDataDir == "" && ClusterEnabled {
 			EtcdDataDir = "/tmp/colonies/prod/etcd"
 			log.Warning("EtcdDataDir not specified, setting it to " + EtcdDataDir)
 		}
@@ -304,8 +320,8 @@ var serverStartCmd = &cobra.Command{
 			}
 		}
 
-		log.Info("Starting HTTP server")
-		startServer(db, node, clusterConfig, EtcdDataDir)
+		log.WithFields(log.Fields{"ClusterEnabled": ClusterEnabled, "Port": ServerPort}).Info("Starting HTTP server")
+		startServer(db, node, clusterConfig, ClusterEnabled, EtcdDataDir)
 	},
 }
 
@@ -334,4 +350,3 @@ var serverAliveCmd = &cobra.Command{
 		os.Exit(0)
 	},
 }
-

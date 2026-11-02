@@ -7,6 +7,8 @@ The Colonies server uses 3 internal ports.
 
 Note: For security reasons, only API port should be exposed externally on the Internet.
 
+Note: Clustering is only needed when running more than one Colonies server against the same database. A single-node deployment can start the server with `--cluster=false` (or `COLONIES_CLUSTER=false`), which skips the embedded Etcd server and the relay port entirely. See [Configuration](Configuration.md#clustering).
+
 # RAFT/Etcd requirements 
 | Colonies Server Replicas | Majority | Failure Tolerance |
 |:------------------------:|:--------:|:-----------------:|

@@ -106,6 +106,7 @@ var Long float64
 var Lat float64
 var AllowExecutorReregister bool
 var ExclusiveAssign bool
+var ClusterEnabled bool
 var StaleExecutorDuration int
 var Approve bool
 var Waiting bool

@@ -144,22 +144,22 @@ func (m *MockProcessDB) CountFailedProcesses() (int, error) {
 	return m.failedCount, nil
 }
 
-// MockEtcdServer implements EtcdServer interface
-type MockEtcdServer struct {
+// MockCoordinator implements Coordinator interface
+type MockCoordinator struct {
 	clusterConfig cluster.Config
 }
 
-func (m *MockEtcdServer) CurrentCluster() cluster.Config {
+func (m *MockCoordinator) CurrentCluster() cluster.Config {
 	return m.clusterConfig
 }
 
 // MockController implements Controller interface
 type MockController struct {
-	etcdServer *MockEtcdServer
+	coordinator *MockCoordinator
 }
 
-func (m *MockController) GetEtcdServer() EtcdServer {
-	return m.etcdServer
+func (m *MockController) GetCoordinator() Coordinator {
+	return m.coordinator
 }
 
 // MockValidator implements Validator interface
@@ -282,10 +282,10 @@ func createMockServer() (*MockServer, *MockContext) {
 		successCount: 100,
 		failedCount:  5,
 	}
-	etcdServer := &MockEtcdServer{
+	coordinator := &MockCoordinator{
 		clusterConfig: cluster.Config{},
 	}
-	controller := &MockController{etcdServer: etcdServer}
+	controller := &MockController{coordinator: coordinator}
 	validator := &MockValidator{}
 
 	server := &MockServer{

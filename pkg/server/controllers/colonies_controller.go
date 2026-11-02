@@ -113,7 +113,7 @@ type ColoniesController struct {
 	leaderMutex      sync.Mutex
 	thisNode         cluster.Node
 	clusterConfig    cluster.Config
-	etcdServer       *cluster.EtcdServer
+	coordinator      cluster.Coordinator
 	leader           bool
 	generatorPeriod  int
 	cronPeriod       int
@@ -132,6 +132,7 @@ type ColoniesController struct {
 func CreateColoniesController(db database.Database,
 	thisNode cluster.Node,
 	clusterConfig cluster.Config,
+	clusterEnabled bool,
 	etcdDataPath string,
 	generatorPeriod int,
 	cronPeriod int,
@@ -159,9 +160,13 @@ func CreateColoniesController(db database.Database,
 	controller.securityDB = db
 	controller.thisNode = thisNode
 	controller.clusterConfig = clusterConfig
-	controller.etcdServer = cluster.CreateEtcdServer(controller.thisNode, controller.clusterConfig, etcdDataPath)
-	controller.etcdServer.Start()
-	controller.etcdServer.WaitToStart()
+	if clusterEnabled {
+		controller.coordinator = cluster.CreateEtcdServer(controller.thisNode, controller.clusterConfig, etcdDataPath)
+		controller.coordinator.Start()
+		controller.coordinator.WaitToStart()
+	} else {
+		controller.coordinator = cluster.CreateLocalCoordinator(controller.thisNode)
+	}
 	controller.leader = false
 	controller.generatorPeriod = generatorPeriod
 	controller.cronPeriod = cronPeriod
@@ -172,7 +177,9 @@ func CreateColoniesController(db database.Database,
 	controller.pauseChannels = make(map[string][]chan bool)
 	controller.channelRouter = channel.NewRouter()
 
-	controller.relayServer = cluster.CreateRelayServer(controller.thisNode, controller.clusterConfig)
+	if clusterEnabled {
+		controller.relayServer = cluster.CreateRelayServer(controller.thisNode, controller.clusterConfig)
+	}
 
 	factory := backendGin.NewFactory()
 	controller.eventHandler = factory.CreateEventHandler(controller.relayServer)
@@ -202,8 +209,10 @@ func (controller *ColoniesController) GetGeneratorPeriod() int {
 	return controller.generatorPeriod
 }
 
-func (controller *ColoniesController) GetEtcdServer() *cluster.EtcdServer {
-	return controller.etcdServer
+// GetCoordinator returns the cluster coordinator, regardless of whether
+// clustering is enabled (etcd-backed) or disabled (local single-node).
+func (controller *ColoniesController) GetCoordinator() cluster.Coordinator {
+	return controller.coordinator
 }
 
 func (controller *ColoniesController) GetEventHandler() backends.RealtimeEventHandler {
@@ -1298,11 +1307,11 @@ func (controller *ColoniesController) ResetDatabase() error {
 }
 
 func (controller *ColoniesController) PauseColonyAssignments(colonyName string) error {
-	return controller.etcdServer.PauseColonyAssignments(colonyName)
+	return controller.coordinator.PauseColonyAssignments(colonyName)
 }
 
 func (controller *ColoniesController) ResumeColonyAssignments(colonyName string) error {
-	err := controller.etcdServer.ResumeColonyAssignments(colonyName)
+	err := controller.coordinator.ResumeColonyAssignments(colonyName)
 	if err != nil {
 		return err
 	}
@@ -1313,7 +1322,7 @@ func (controller *ColoniesController) ResumeColonyAssignments(colonyName string)
 }
 
 func (controller *ColoniesController) AreColonyAssignmentsPaused(colonyName string) (bool, error) {
-	return controller.etcdServer.AreColonyAssignmentsPaused(colonyName)
+	return controller.coordinator.AreColonyAssignmentsPaused(colonyName)
 }
 
 // createResumeChannel creates a channel that will be signaled when assignments are resumed for a colony
@@ -1354,8 +1363,12 @@ func (controller *ColoniesController) Stop() {
 	controller.stopMutex.Unlock()
 	controller.cmdQueue <- &command{stop: true}
 	controller.eventHandler.Stop()
-	controller.relayServer.Shutdown()
-	controller.etcdServer.Stop()
-	controller.etcdServer.WaitToStop()
-	os.RemoveAll(controller.etcdServer.StorageDir())
+	if controller.relayServer != nil {
+		controller.relayServer.Shutdown()
+	}
+	controller.coordinator.Stop()
+	controller.coordinator.WaitToStop()
+	if storageDir := controller.coordinator.StorageDir(); storageDir != "" {
+		os.RemoveAll(storageDir)
+	}
 }

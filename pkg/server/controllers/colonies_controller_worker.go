@@ -10,7 +10,7 @@ import (
 )
 
 func (controller *ColoniesController) IsLeader() bool {
-	areWeLeader := controller.etcdServer.Leader() == controller.thisNode.Name
+	areWeLeader := controller.coordinator.Leader() == controller.thisNode.Name
 	if areWeLeader && !controller.leader {
 		log.WithFields(log.Fields{"EtcdNode": controller.thisNode.Name}).Debug("ColoniesServer became leader")
 		controller.leader = true

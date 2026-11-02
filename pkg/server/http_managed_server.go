@@ -34,6 +34,7 @@ func NewHTTPManagedServer(config *ServerConfig, sharedResources *SharedResources
 		config.TLSCertPath,
 		sharedResources.ThisNode,
 		sharedResources.ClusterConfig,
+		sharedResources.ClusterEnabled,
 		sharedResources.EtcdDataPath,
 		sharedResources.GeneratorPeriod,
 		sharedResources.CronPeriod,
