@@ -399,14 +399,25 @@ func (db *DatabaseMock) FindGeneratorsByColonyName(colonyName string, count int)
 	return nil, nil
 }
 func (db *DatabaseMock) RemoveGeneratorByID(generatorID string) error          { return nil }
-func (db *DatabaseMock) AddGeneratorArg(generatorArg *core.GeneratorArg) error { return nil }
+func (db *DatabaseMock) AddGeneratorArg(generatorArg *core.GeneratorArg) error {
+	if db.ReturnError == "AddGeneratorArg" {
+		return errors.New("mock error")
+	}
+	return nil
+}
 func (db *DatabaseMock) GetGeneratorArgs(generatorID string, count int) ([]*core.GeneratorArg, error) {
 	return nil, nil
 }
 func (db *DatabaseMock) CountGeneratorArgs(generatorID string) (int, error)           { return 0, nil }
 func (db *DatabaseMock) RemoveGeneratorArgByID(generatorArgID string) error           { return nil }
+func (db *DatabaseMock) RemoveGeneratorArgsByIDs(generatorArgIDs []string) error      { return nil }
 func (db *DatabaseMock) SetGeneratorLastRun(generatorID string) error                 { return nil }
-func (db *DatabaseMock) SetGeneratorFirstPack(generatorID string) error               { return nil }
+func (db *DatabaseMock) SetGeneratorFirstPack(generatorID string) error {
+	if db.ReturnError == "SetGeneratorFirstPack" {
+		return errors.New("mock error")
+	}
+	return nil
+}
 func (db *DatabaseMock) RemoveAllGeneratorsByColonyName(colonyName string) error      { return nil }
 func (db *DatabaseMock) RemoveAllGeneratorArgsByGeneratorID(generatorID string) error { return nil }
 func (db *DatabaseMock) RemoveAllGeneratorArgsByColonyName(colonyName string) error   { return nil }
