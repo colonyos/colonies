@@ -111,8 +111,6 @@ func (db *PQDatabase) SetGeneratorLastRun(generatorID string) error {
 	return nil
 }
 
-// SetGeneratorFirstPack sets FIRSTPACK only if the generator has never been packed.
-// "Never packed" is stored as time.Time{} (year 1), i.e. anything <= epoch, matching TriggerGenerators.
 func (db *PQDatabase) SetGeneratorFirstPack(generatorID string) error {
 	sqlStatement := `UPDATE  ` + db.dbPrefix + `GENERATORS SET FIRSTPACK=$1 WHERE GENERATOR_ID=$2 AND (FIRSTPACK IS NULL OR FIRSTPACK <= 'epoch'::timestamptz)`
 	_, err := db.postgresql.Exec(sqlStatement, time.Now(), generatorID)

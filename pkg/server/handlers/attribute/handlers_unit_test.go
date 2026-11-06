@@ -131,6 +131,7 @@ func (m *MockProcessDB) FindFailedProcesses(colonyName string, executorType stri
 }
 func (m *MockProcessDB) FindAllRunningProcesses() ([]*core.Process, error)  { return nil, nil }
 func (m *MockProcessDB) FindAllWaitingProcesses() ([]*core.Process, error)  { return nil, nil }
+func (m *MockProcessDB) FindExpiredWaitingProcesses() ([]*core.Process, error) { return nil, nil }
 func (m *MockProcessDB) RemoveProcessByID(processID string) error           { return nil }
 func (m *MockProcessDB) RemoveAllProcesses() error                          { return nil }
 func (m *MockProcessDB) RemoveAllWaitingProcessesByColonyName(string) error { return nil }

@@ -18,7 +18,6 @@ func TestPackGeneratorErrorPaths(t *testing.T) {
 
 	for _, failing := range []string{"AddGeneratorArg", "SetGeneratorFirstPack"} {
 		dbMock.ReturnError = failing
-		// Repeated failures must neither block the worker nor panic
 		for i := 0; i < 3; i++ {
 			done := make(chan error, 1)
 			go func() { done <- controller.PackGenerator("gen_id", "colony", "arg") }()
@@ -72,7 +71,6 @@ func TestPackGeneratorNotBlockedByQueue(t *testing.T) {
 	controller, _ := createFakeColoniesController(t)
 	defer controller.Stop()
 
-	// Occupy the single cmdQueue worker; packs and lookups must still complete
 	release := make(chan struct{})
 	started := make(chan struct{})
 	controller.cmdQueue <- &command{handler: func(cmd *command) {
@@ -129,7 +127,6 @@ func TestPackGeneratorConcurrentWithTrigger(t *testing.T) {
 	wg.Wait()
 
 	controller.TriggerGenerators()
-	// cmdQueue is FIFO with one worker, so this returns after the trigger above has finished
 	_, err = controller.GetGenerators(colonyName, 10)
 	assert.Nil(t, err)
 

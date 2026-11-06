@@ -86,6 +86,7 @@ func (m *MockProcessDB) FindSuccessfulProcesses(colonyName string, executorType 
 func (m *MockProcessDB) FindFailedProcesses(colonyName string, executorType string, label string, initiator string, count int) ([]*core.Process, error) { return nil, nil }
 func (m *MockProcessDB) FindAllRunningProcesses() ([]*core.Process, error)                        { return nil, nil }
 func (m *MockProcessDB) FindAllWaitingProcesses() ([]*core.Process, error)                        { return nil, nil }
+func (m *MockProcessDB) FindExpiredWaitingProcesses() ([]*core.Process, error) { return nil, nil }
 func (m *MockProcessDB) FindCandidates(colonyName string, executorType string, executorLocationName string, cpu int64, memory int64, storage int64, nodes int, processes int, processesPerNode int, count int) ([]*core.Process, error) { return nil, nil }
 func (m *MockProcessDB) FindCandidatesByName(colonyName string, executorName string, executorType string, executorLocationName string, cpu int64, memory int64, storage int64, nodes int, processes int, processesPerNode int, count int) ([]*core.Process, error) { return nil, nil }
 func (m *MockProcessDB) RemoveProcessByID(processID string) error                                 { return nil }

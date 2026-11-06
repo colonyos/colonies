@@ -199,6 +199,7 @@ func (db *DatabaseMock) FindFailedProcesses(colonyName string, executorType stri
 }
 func (db *DatabaseMock) FindAllRunningProcesses() ([]*core.Process, error) { return nil, nil }
 func (db *DatabaseMock) FindAllWaitingProcesses() ([]*core.Process, error) { return nil, nil }
+func (db *DatabaseMock) FindExpiredWaitingProcesses() ([]*core.Process, error) { return nil, nil }
 func (db *DatabaseMock) FindCandidates(colonyName string, executorType string, executorLocationName string, cpu int64, memory int64, storage int64, nodes int, processes int, processesPerNode int, count int) ([]*core.Process, error) {
 	return nil, nil
 }
