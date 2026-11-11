@@ -81,46 +81,14 @@ func (controller *ColoniesController) TriggerGenerators() {
 	controller.cmdQueue <- cmd
 }
 
+// GetGenerator and ResolveGenerator are read-only and bypass cmdQueue so they never wait behind
+// TriggerGenerators/SubmitWorkflow.
 func (controller *ColoniesController) GetGenerator(generatorID string) (*core.Generator, error) {
-	cmd := &command{generatorReplyChan: make(chan *core.Generator, 1),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			generator, err := controller.generatorDB.GetGeneratorByID(generatorID)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.generatorReplyChan <- generator
-		}}
-
-	controller.cmdQueue <- cmd
-	select {
-	case err := <-cmd.errorChan:
-		return nil, err
-	case generator := <-cmd.generatorReplyChan:
-		return generator, nil
-	}
+	return controller.generatorDB.GetGeneratorByID(generatorID)
 }
 
 func (controller *ColoniesController) ResolveGenerator(colonyName string, generatorName string) (*core.Generator, error) {
-	cmd := &command{generatorReplyChan: make(chan *core.Generator, 1),
-		errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			generator, err := controller.generatorDB.GetGeneratorByName(colonyName, generatorName)
-			if err != nil {
-				cmd.errorChan <- err
-				return
-			}
-			cmd.generatorReplyChan <- generator
-		}}
-
-	controller.cmdQueue <- cmd
-	select {
-	case err := <-cmd.errorChan:
-		return nil, err
-	case generator := <-cmd.generatorReplyChan:
-		return generator, nil
-	}
+	return controller.generatorDB.GetGeneratorByName(colonyName, generatorName)
 }
 
 func (controller *ColoniesController) GetGenerators(colonyName string, count int) ([]*core.Generator, error) {
@@ -144,40 +112,28 @@ func (controller *ColoniesController) GetGenerators(colonyName string, count int
 	}
 }
 
+// PackGenerator bypasses cmdQueue: it is an INSERT plus an idempotent conditional UPDATE, and
+// SubmitWorkflow deletes consumed args by ID, so concurrent packs during a trigger are safe.
 func (controller *ColoniesController) PackGenerator(generatorID string, colonyName, arg string) error {
-	cmd := &command{errorChan: make(chan error, 1),
-		handler: func(cmd *command) {
-			generatorArg := core.CreateGeneratorArg(generatorID, colonyName, arg)
-			err := controller.generatorDB.AddGeneratorArg(generatorArg)
-			if err != nil {
-				log.WithFields(log.Fields{"Error": err}).Error("Failed add generator args")
-				cmd.errorChan <- err
-			}
-			count, err := controller.generatorDB.CountGeneratorArgs(generatorID)
-			log.WithFields(log.Fields{"Arg": arg, "Count": count, "GeneratorId": generatorID}).Debug("Added args to generator")
-
-			generator, err := controller.generatorDB.GetGeneratorByID(generatorID)
-			if err != nil {
-				log.WithFields(log.Fields{"Error": err, "GeneratorId": generatorID}).Error("Failed to get generator")
-				cmd.errorChan <- err
-			}
-
-			if generator.FirstPack.Unix() < 0 {
-				err = controller.generatorDB.SetGeneratorFirstPack(generatorID)
-				if err != nil {
-					log.WithFields(log.Fields{"Error": err, "GeneratorId": generatorID}).Error("Failed to set generator first pack")
-					cmd.errorChan <- err
-				}
-			}
-
-			cmd.errorChan <- nil
-		}}
-
-	controller.cmdQueue <- cmd
-	select {
-	case err := <-cmd.errorChan:
+	generatorArg := core.CreateGeneratorArg(generatorID, colonyName, arg)
+	err := controller.generatorDB.AddGeneratorArg(generatorArg)
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err}).Error("Failed add generator args")
 		return err
 	}
+
+	if log.IsLevelEnabled(log.DebugLevel) {
+		count, _ := controller.generatorDB.CountGeneratorArgs(generatorID)
+		log.WithFields(log.Fields{"Arg": arg, "Count": count, "GeneratorId": generatorID}).Debug("Added args to generator")
+	}
+
+	err = controller.generatorDB.SetGeneratorFirstPack(generatorID)
+	if err != nil {
+		log.WithFields(log.Fields{"Error": err, "GeneratorId": generatorID}).Error("Failed to set generator first pack")
+		return err
+	}
+
+	return nil
 }
 
 func (controller *ColoniesController) GeneratorTriggerLoop() {
@@ -231,22 +187,22 @@ func (controller *ColoniesController) SubmitWorkflow(generator *core.Generator, 
 	}
 
 	// Now it safe to remove the args since they are now attached to a process graph
-	for _, generatorArg := range generatorArgs {
-		count, err := controller.generatorDB.CountGeneratorArgs(generator.ID)
-		log.WithFields(log.Fields{
-			"GeneratorId": generator.ID,
-			"Trigger":     generator.Trigger,
-			"Count":       count,
-			"Arg":         generatorArg.Arg}).
-			Debug("Removing generator arg")
+	generatorArgIDs := make([]string, len(generatorArgs))
+	for i, generatorArg := range generatorArgs {
+		generatorArgIDs[i] = generatorArg.ID
+	}
+	log.WithFields(log.Fields{
+		"GeneratorId": generator.ID,
+		"Trigger":     generator.Trigger,
+		"Count":       len(generatorArgIDs)}).
+		Debug("Removing generator args")
 
-		err = controller.generatorDB.RemoveGeneratorArgByID(generatorArg.ID)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"Error": err}).
-				Error("Failed to remove generator arg")
-			return
-		}
+	err = controller.generatorDB.RemoveGeneratorArgsByIDs(generatorArgIDs)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"Error": err}).
+			Error("Failed to remove generator args")
+		return
 	}
 
 	err = controller.generatorDB.SetGeneratorLastRun(generator.ID)

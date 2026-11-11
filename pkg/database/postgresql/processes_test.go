@@ -79,6 +79,9 @@ func TestProcessClosedDB(t *testing.T) {
 	_, err = db.FindAllWaitingProcesses()
 	assert.NotNil(t, err)
 
+	_, err = db.FindExpiredWaitingProcesses()
+	assert.NotNil(t, err)
+
 	_, err = db.FindSuccessfulProcesses("invalid_id", "", "", "", 1)
 	assert.NotNil(t, err)
 
@@ -1930,6 +1933,87 @@ func TestFindAllProcesses(t *testing.T) {
 	assert.Equal(t, len(waitingProcessIDsFromDB), 20)
 }
 
+func TestFindExpiredWaitingProcesses(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colonyName := core.GenerateRandomID()
+	executor := utils.CreateTestExecutor(colonyName)
+	err = db.AddExecutor(executor)
+	assert.Nil(t, err)
+
+	addProcess := func(maxWaitTime int) *core.Process {
+		process := utils.CreateTestProcess(colonyName)
+		process.FunctionSpec.MaxWaitTime = maxWaitTime
+		err := db.AddProcess(process)
+		assert.Nil(t, err)
+		return process
+	}
+
+	for i := 0; i < 1001; i++ {
+		addProcess(-1)
+	}
+
+	notExpired := addProcess(3600)
+	expired := addProcess(3600)
+	err = db.SetWaitDeadline(expired, time.Now().Add(-time.Minute))
+	assert.Nil(t, err)
+
+	running := addProcess(3600)
+	err = db.SetWaitDeadline(running, time.Now().Add(-time.Minute))
+	assert.Nil(t, err)
+
+	err = db.Assign(executor.ID, running)
+	assert.Nil(t, err)
+
+	processes, err := db.FindExpiredWaitingProcesses()
+	assert.Nil(t, err)
+	assert.Len(t, processes, 1)
+	assert.Equal(t, expired.ID, processes[0].ID)
+	assert.NotEqual(t, notExpired.ID, processes[0].ID)
+}
+
+func TestParseProcessesAttachesAttributesPerProcess(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colonyName := core.GenerateRandomID()
+	envs := []map[string]string{
+		{"key_a": "value_a1", "key_b": "value_b1"},
+		{"key_a": "value_a2"},
+		{},
+	}
+	expected := make(map[string]map[string]string)
+	for _, env := range envs {
+		process := utils.CreateTestProcessWithEnv(colonyName, env)
+		err = db.AddProcess(process)
+		assert.Nil(t, err)
+		expected[process.ID] = env
+	}
+
+	processes, err := db.FindWaitingProcesses(colonyName, "", "", "", 10)
+	assert.Nil(t, err)
+	assert.Len(t, processes, len(envs))
+	for _, process := range processes {
+		env := expected[process.ID]
+		assert.Equal(t, env, process.FunctionSpec.Env)
+		assert.Len(t, process.Attributes, len(env))
+		for _, attribute := range process.Attributes {
+			assert.Equal(t, process.ID, attribute.TargetID)
+			assert.Equal(t, core.ENV, attribute.AttributeType)
+			assert.Equal(t, env[attribute.Key], attribute.Value)
+		}
+	}
+
+	processFromDB, err := db.GetProcessByID(processes[0].ID)
+	assert.Nil(t, err)
+	assert.Equal(t, expected[processFromDB.ID], processFromDB.FunctionSpec.Env)
+}
+
 func TestFindProcessesByExecutorID(t *testing.T) {
 	db, err := PrepareTests()
 	assert.Nil(t, err)
@@ -2469,9 +2553,9 @@ func TestSelectAndAssign(t *testing.T) {
 		executor.Name,
 		executor.Type,
 		executor.LocationName,
-		0, 0, 0,  // cpu, memory, storage
-		0, 0, 0,  // nodes, processes, processesPerNode
-		1,        // count
+		0, 0, 0, // cpu, memory, storage
+		0, 0, 0, // nodes, processes, processesPerNode
+		1, // count
 	)
 	assert.Nil(t, err)
 	assert.NotNil(t, assignedProcess)

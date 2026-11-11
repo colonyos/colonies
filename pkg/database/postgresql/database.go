@@ -894,6 +894,16 @@ func (db *PQDatabase) createUsersIndex1() error {
 	return nil
 }
 
+func (db *PQDatabase) createProcessesWaitDeadlineIndex() error {
+	sqlStatement := `CREATE INDEX IF NOT EXISTS ` + db.dbPrefix + `PROCESSES_WAIT_DEADLINE_INDEX ON ` + db.dbPrefix + `PROCESSES (WAIT_DEADLINE) WHERE STATE = 0 AND MAX_WAIT_TIME > 0`
+	_, err := db.postgresql.Exec(sqlStatement)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *PQDatabase) createProcessesAssignedExecutorIndex() error {
 	sqlStatement := `CREATE INDEX IF NOT EXISTS ` + db.dbPrefix + `PROCESSES_ASSIGNED_EXECUTOR_INDEX ON ` + db.dbPrefix + `PROCESSES (ASSIGNED_EXECUTOR_ID, STATE)`
 	_, err := db.postgresql.Exec(sqlStatement)
@@ -1136,6 +1146,11 @@ func (db *PQDatabase) Initialize() error {
 	}
 
 	err = db.createProcessesAssignedExecutorIndex()
+	if err != nil {
+		return err
+	}
+
+	err = db.createProcessesWaitDeadlineIndex()
 	if err != nil {
 		return err
 	}

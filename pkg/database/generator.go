@@ -16,6 +16,7 @@ type GeneratorDatabase interface {
 	GetGeneratorArgs(generatorID string, count int) ([]*core.GeneratorArg, error)
 	CountGeneratorArgs(generatorID string) (int, error)
 	RemoveGeneratorArgByID(generatorArgsID string) error
+	RemoveGeneratorArgsByIDs(generatorArgIDs []string) error
 	RemoveAllGeneratorArgsByGeneratorID(generatorID string) error
 	RemoveAllGeneratorArgsByColonyName(generatorID string) error
 }

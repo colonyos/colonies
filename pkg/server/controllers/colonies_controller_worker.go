@@ -48,6 +48,7 @@ func (controller *ColoniesController) TimeoutLoop() {
 			log.Error(err)
 			continue
 		}
+
 		for _, process := range processes {
 			if process.FunctionSpec.MaxExecTime == -1 {
 				continue
@@ -71,25 +72,23 @@ func (controller *ColoniesController) TimeoutLoop() {
 			}
 		}
 
-		// TODO: FindAllWaitingProcesses will only return max 1000 processes, this is to avoid dumping the entire database
-		// However, the means that maxWaitTime may not work correctly if there are more than 1000 waiting processes.
-		processes, err = controller.processDB.FindAllWaitingProcesses()
+		processes, err = controller.processDB.FindExpiredWaitingProcesses()
 		if err != nil {
 			continue
 		}
+
+		// FindExpiredWaitingProcesses only returns processes with MaxWaitTime > 0 past their deadline
 		for _, process := range processes {
-			if process.FunctionSpec.MaxWaitTime == -1 || process.FunctionSpec.MaxWaitTime == 0 {
+			err := controller.CloseFailed(process.ID, []string{"Maximum waiting time limit exceeded"})
+			if err != nil {
+				log.WithFields(log.Fields{"ProcessId": process.ID, "Error": err}).Debug("Max waiting time reached, but failed to close process")
 				continue
 			}
 
-			if time.Now().Unix() > process.WaitDeadline.Unix() {
-				err := controller.CloseFailed(process.ID, []string{"Maximum waiting time limit exceeded"})
-				if err != nil {
-					log.WithFields(log.Fields{"ProcessId": process.ID, "Error": err}).Debug("Max waiting time reached, but failed to close process")
-					continue
-				}
-				log.WithFields(log.Fields{"ProcessId": process.ID, "MaxWaitTime": process.FunctionSpec.MaxWaitTime}).Debug("Process closed as failed as maximum waiting time limit exceeded")
-			}
+			log.WithFields(log.Fields{
+				"ProcessId":   process.ID,
+				"MaxWaitTime": process.FunctionSpec.MaxWaitTime,
+			}).Debug("Process closed as failed as maximum waiting time limit exceeded")
 		}
 	}
 }

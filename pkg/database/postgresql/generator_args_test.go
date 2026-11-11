@@ -26,6 +26,9 @@ func TestGeneratorArgClosedDB(t *testing.T) {
 	err = db.RemoveGeneratorArgByID("invalid_id")
 	assert.NotNil(t, err)
 
+	err = db.RemoveGeneratorArgsByIDs([]string{"invalid_id"})
+	assert.NotNil(t, err)
+
 	err = db.RemoveAllGeneratorArgsByGeneratorID("invalid_id")
 	assert.NotNil(t, err)
 
@@ -81,6 +84,33 @@ func TestRemoveGeneratorArgByID(t *testing.T) {
 	count, err = db.CountGeneratorArgs(generatorID)
 	assert.Nil(t, err)
 	assert.Equal(t, count, 0)
+}
+
+func TestRemoveGeneratorArgsByIDs(t *testing.T) {
+	db, err := PrepareTests()
+	assert.Nil(t, err)
+
+	defer db.Close()
+
+	colonyName := core.GenerateRandomID()
+	generatorID := core.GenerateRandomID()
+	var generatorArgs []*core.GeneratorArg
+	for i := 0; i < 3; i++ {
+		generatorArg := core.CreateGeneratorArg(generatorID, colonyName, "arg")
+		assert.Nil(t, db.AddGeneratorArg(generatorArg))
+		generatorArgs = append(generatorArgs, generatorArg)
+	}
+
+	err = db.RemoveGeneratorArgsByIDs(nil)
+	assert.Nil(t, err)
+
+	err = db.RemoveGeneratorArgsByIDs([]string{generatorArgs[0].ID, generatorArgs[2].ID})
+	assert.Nil(t, err)
+
+	remaining, err := db.GetGeneratorArgs(generatorID, 10)
+	assert.Nil(t, err)
+	assert.Len(t, remaining, 1)
+	assert.Equal(t, generatorArgs[1].ID, remaining[0].ID)
 }
 
 func TestRemoveGeneratorArgByGeneratorID(t *testing.T) {

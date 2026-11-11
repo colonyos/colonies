@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/colonyos/colonies/pkg/core"
+	"github.com/lib/pq"
 )
 
 func (db *PQDatabase) AddGeneratorArg(generatorArg *core.GeneratorArg) error {
@@ -73,6 +74,20 @@ func (db *PQDatabase) CountGeneratorArgs(generatorID string) (int, error) {
 func (db *PQDatabase) RemoveGeneratorArgByID(generatorArgsID string) error {
 	sqlStatement := `DELETE FROM ` + db.dbPrefix + `GENERATORARGS WHERE GENERATORARG_ID=$1`
 	_, err := db.postgresql.Exec(sqlStatement, generatorArgsID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *PQDatabase) RemoveGeneratorArgsByIDs(generatorArgIDs []string) error {
+	if len(generatorArgIDs) == 0 {
+		return nil
+	}
+
+	sqlStatement := `DELETE FROM ` + db.dbPrefix + `GENERATORARGS WHERE GENERATORARG_ID = ANY($1)`
+	_, err := db.postgresql.Exec(sqlStatement, pq.Array(generatorArgIDs))
 	if err != nil {
 		return err
 	}

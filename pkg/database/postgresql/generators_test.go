@@ -2,6 +2,7 @@ package postgresql
 
 import (
 	"testing"
+	"time"
 
 	"github.com/colonyos/colonies/pkg/core"
 	"github.com/colonyos/colonies/pkg/utils"
@@ -145,6 +146,19 @@ func TestSetGeneratorFirstPack(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.True(t, generatorFromDB.FirstPack.Unix() > 0)
+	firstPack := generatorFromDB.FirstPack
+
+	// A later call must not move FirstPack
+	time.Sleep(1100 * time.Millisecond)
+	err = db.SetGeneratorFirstPack(generator.ID)
+	assert.Nil(t, err)
+
+	generatorFromDB, err = db.GetGeneratorByID(generator.ID)
+	assert.Nil(t, err)
+	assert.True(t, generatorFromDB.FirstPack.Equal(firstPack))
+
+	err = db.SetGeneratorFirstPack("unknown_id")
+	assert.Nil(t, err)
 }
 
 func TestFindGeneratorsByColonyName(t *testing.T) {

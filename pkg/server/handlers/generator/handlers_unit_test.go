@@ -118,6 +118,10 @@ func (m *MockGeneratorDB) RemoveGeneratorArgByID(generatorArgsID string) error {
 	return nil
 }
 
+func (m *MockGeneratorDB) RemoveGeneratorArgsByIDs(generatorArgIDs []string) error {
+	return nil
+}
+
 func (m *MockGeneratorDB) RemoveAllGeneratorArgsByGeneratorID(generatorID string) error {
 	return nil
 }

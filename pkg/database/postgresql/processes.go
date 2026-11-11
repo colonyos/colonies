@@ -155,36 +155,21 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 			return nil, err
 		}
 
-		attributes, err := db.GetAttributes(processID)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(attributes) == 0 {
-			attributes = make([]core.Attribute, 0)
-		}
+		// Attributes and env are filled by attachAttributes after the loop.
+		attributes := make([]core.Attribute, 0)
 
 		if len(targetExecutorNames) == 1 && targetExecutorNames[0] == "*" {
 			targetExecutorNames = []string{}
 		}
 
-		// Restore env map
 		env := make(map[string]string)
-		inAttributes, err := db.GetAttributesByType(processID, core.ENV)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, attribute := range inAttributes {
-			env[attribute.Key] = attribute.Value
-		}
 
 		if len(dependencies) == 0 {
 			dependencies = make([]string, 0)
 		}
 
 		var argsif []interface{}
-		err = json.Unmarshal([]byte(argsJSONStr), &argsif)
+		err := json.Unmarshal([]byte(argsJSONStr), &argsif)
 		if err != nil {
 			return nil, err
 		}
@@ -262,7 +247,50 @@ func (db *PQDatabase) parseProcesses(rows *sql.Rows) ([]*core.Process, error) {
 		process.InitiatorName = initiatorName
 	}
 
+	if err := db.attachAttributes(processes); err != nil {
+		return nil, err
+	}
+
 	return processes, nil
+}
+
+// attachAttributes loads attributes for all processes in one query
+func (db *PQDatabase) attachAttributes(processes []*core.Process) error {
+	if len(processes) == 0 {
+		return nil
+	}
+
+	processIDs := make([]string, len(processes))
+	processByID := make(map[string]*core.Process, len(processes))
+	for i, process := range processes {
+		processIDs[i] = process.ID
+		processByID[process.ID] = process
+	}
+
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `ATTRIBUTES WHERE TARGET_ID = ANY($1)`
+	rows, err := db.postgresql.Query(sqlStatement, pq.Array(processIDs))
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	attributes, err := db.parseAttributes(rows)
+	if err != nil {
+		return err
+	}
+
+	for _, attribute := range attributes {
+		process, ok := processByID[attribute.TargetID]
+		if !ok {
+			continue
+		}
+		process.Attributes = append(process.Attributes, attribute)
+		if attribute.AttributeType == core.ENV {
+			process.FunctionSpec.Env[attribute.Key] = attribute.Value
+		}
+	}
+
+	return nil
 }
 
 func (db *PQDatabase) GetProcesses() ([]*core.Process, error) {
@@ -524,6 +552,18 @@ func (db *PQDatabase) FindAllRunningProcesses() ([]*core.Process, error) {
 	}
 
 	return matches, nil
+}
+
+// FindExpiredWaitingProcesses returns waiting processes whose max wait time has passed
+func (db *PQDatabase) FindExpiredWaitingProcesses() ([]*core.Process, error) {
+	sqlStatement := `SELECT * FROM ` + db.dbPrefix + `PROCESSES WHERE STATE=` + strconv.Itoa(core.WAITING) + ` AND MAX_WAIT_TIME > 0 AND WAIT_DEADLINE < $1 ORDER BY WAIT_DEADLINE LIMIT 1000`
+	rows, err := db.postgresql.Query(sqlStatement, time.Now())
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return db.parseProcesses(rows)
 }
 
 func (db *PQDatabase) FindAllWaitingProcesses() ([]*core.Process, error) {
