@@ -26,6 +26,11 @@ services:
       - "9000:8333"
       - "9001:23646"
 
+  # Single-node mode (--cluster=false): no embedded Etcd server or relay port
+  # is opened and the local server is always the leader. Note that paused
+  # colony assignments are kept in memory only in this mode and are lost when
+  # the server restarts; persistent pause state requires the etcd Coordinator,
+  # see docs/HADeployment.md.
   colonies-server:
     image: colonyos/colonies:v1.9.10
     depends_on:
@@ -56,11 +61,9 @@ services:
       COLONIES_RETENTION: "false"
       COLONIES_RETENTION_POLICY: "604800" # 60 seconds * 60 * 24 * 7 = 604800 (1 week)
       TZ: ${TZ}
-    volumes:
-      - colonies_etcd:/var/colonies/etcd
     ports:
       - "${COLONIES_SERVER_PORT}:${COLONIES_SERVER_PORT}"
-    command: sh -c "colonies server start --initdb --port ${COLONIES_SERVER_PORT} --relayport 25100 --etcdname server1 --etcdhost colonies-server --etcdclientport 23100 --etcdpeerport 24100 --initial-cluster server1=colonies-server:24100:25100:${COLONIES_SERVER_PORT} --etcddatadir /var/colonies/etcd --insecure"
+    command: sh -c "colonies server start --initdb --port ${COLONIES_SERVER_PORT} --cluster=false --insecure"
 
   colonies-setup:
     image: colonyos/colonies:v1.9.10
@@ -145,4 +148,3 @@ services:
 volumes:
   timescaledb_data:
   seaweedfs_data:
-  colonies_etcd:
