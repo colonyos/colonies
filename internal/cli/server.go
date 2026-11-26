@@ -141,13 +141,31 @@ var serverStartCmd = &cobra.Command{
 	Short: "Start a production server",
 	Long:  "Start a production server",
 	Run: func(cmd *cobra.Command, args []string) {
-		// parseEnv applies COLONIES_CLUSTER; an explicit --cluster flag takes
-		// precedence over the environment variable.
+		// COLONIES_CLUSTER and COLONIES_ALLOW_EXECUTOR_REREGISTER are parsed
+		// here rather than in parseEnv(), which runs for every client
+		// command. An explicit --cluster flag takes precedence over
+		// COLONIES_CLUSTER.
 		clusterFlag := ClusterEnabled
 		parseDBEnv()
 		parseEnv()
 		if cmd.Flags().Changed("cluster") {
 			ClusterEnabled = clusterFlag
+		} else if clusterEnvStr := os.Getenv("COLONIES_CLUSTER"); clusterEnvStr != "" {
+			clusterEnabled, err := strconv.ParseBool(clusterEnvStr)
+			if err != nil {
+				log.Error("Failed to parse COLONIES_CLUSTER")
+			}
+			CheckError(err)
+			ClusterEnabled = clusterEnabled
+		}
+
+		if reregisterEnvStr := os.Getenv("COLONIES_ALLOW_EXECUTOR_REREGISTER"); reregisterEnvStr != "" {
+			allowExecutorReregister, err := strconv.ParseBool(reregisterEnvStr)
+			if err != nil {
+				log.Error("Failed to parse COLONIES_ALLOW_EXECUTOR_REREGISTER")
+			}
+			CheckError(err)
+			AllowExecutorReregister = allowExecutorReregister
 		}
 
 		if !ClusterEnabled && len(EtcdCluster) > 0 {
