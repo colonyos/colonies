@@ -1,5 +1,5 @@
 all: build
-.PHONY: all build container container-multiplatform container-multiplatform-push push coverage test test-all test-compat github_test install startdb nukedb
+.PHONY: all build container container-multiplatform container-multiplatform-push push coverage test test-single-node test-all test-compat github_test install startdb nukedb
 
 BUILD_IMAGE ?= colonyos/colonies
 PUSH_IMAGE ?= colonyos/colonies:v1.9.10
@@ -46,7 +46,12 @@ build_cryptolib_ubuntu_2020:
 test:
 	@go test -race ./...
 
-github_test: test
+# Runs the server tests with clustering disabled (the single-node coordinator
+# instead of embedded etcd), covering the --cluster=false production path
+test-single-node:
+	@COLONIES_TEST_CLUSTER=false go test -race ./pkg/server/...
+
+github_test: test test-single-node
 
 install:
 	cp ./bin/colonies /usr/local/bin

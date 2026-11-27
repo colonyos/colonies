@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -220,14 +221,41 @@ const (
 // interval is still the floor) while cutting the waiting to just over a second.
 const testCronPeriodMillis = 100
 
+// testClusterEnabled controls whether test servers start a real embedded etcd.
+// Clustering is enabled by default (COLONIES_TEST_CLUSTER unset or "true"),
+// preserving historical behavior. Setting COLONIES_TEST_CLUSTER=false runs the
+// same single-node coordinator production uses with clustering disabled, which
+// is considerably faster for suites that do not exercise clustering. Suites
+// that DO exercise clustering (StartCluster, distributed/exclusive assignment)
+// always use real etcd regardless of this setting.
+func testClusterEnabled() bool {
+	return os.Getenv("COLONIES_TEST_CLUSTER") != "false"
+}
+
 func prepareTestsWithRetention(t *testing.T, retention bool) (*client.ColoniesClient, *Server, string, chan bool) {
+	return prepareTestsWithOptions(t, retention, testClusterEnabled())
+}
+
+// prepareTestsWithOptions starts a test server with the given retention and
+// clustering settings, regardless of COLONIES_TEST_CLUSTER.
+func prepareTestsWithOptions(t *testing.T, retention bool, clusterEnabled bool) (*client.ColoniesClient, *Server, string, chan bool) {
 	// Dynamic ports and a per-test etcd data directory allow test packages to
 	// run in parallel without colliding on fixed ports or /tmp/colonies. The
 	// ports stay reserved until just before each component binds, so parallel
 	// test processes cannot be handed the same port during the slow parts of
 	// the setup (database preparation, etcd startup).
-	reserved := utils.ReservePortsOrPanic(4)
-	apiPort, etcdClientPort, etcdPeerPort, relayPort := reserved[0].Port(), reserved[1].Port(), reserved[2].Port(), reserved[3].Port()
+	//
+	// With clustering disabled only the API port is needed.
+	numPorts := 4
+	if !clusterEnabled {
+		numPorts = 1
+	}
+	reserved := utils.ReservePortsOrPanic(numPorts)
+	apiPort := reserved[0].Port()
+	etcdClientPort, etcdPeerPort, relayPort := apiPort, apiPort, apiPort
+	if clusterEnabled {
+		etcdClientPort, etcdPeerPort, relayPort = reserved[1].Port(), reserved[2].Port(), reserved[3].Port()
+	}
 	etcdDataPath := t.TempDir()
 
 	client := client.CreateColoniesClient(constants.TESTHOST, apiPort, Insecure, SkipTLSVerify)
@@ -247,10 +275,12 @@ func prepareTestsWithRetention(t *testing.T, retention bool) (*client.ColoniesCl
 	node := cluster.Node{Name: "etcd", Host: "localhost", EtcdClientPort: etcdClientPort, EtcdPeerPort: etcdPeerPort, RelayPort: relayPort, APIPort: apiPort}
 	clusterConfig := cluster.Config{}
 	clusterConfig.AddNode(node)
-	reserved[1].Release()
-	reserved[2].Release()
-	reserved[3].Release()
-	server := CreateServer(db, apiPort, EnableTLS, "", "", node, clusterConfig, etcdDataPath, constants.GENERATOR_TRIGGER_PERIOD, testCronPeriodMillis, false, false, retention, testRetentionPolicySeconds, testRetentionPeriodMillis, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second)
+	if clusterEnabled {
+		reserved[1].Release()
+		reserved[2].Release()
+		reserved[3].Release()
+	}
+	server := CreateServer(db, apiPort, EnableTLS, "", "", node, clusterConfig, clusterEnabled, etcdDataPath, constants.GENERATOR_TRIGGER_PERIOD, testCronPeriodMillis, false, false, retention, testRetentionPolicySeconds, testRetentionPeriodMillis, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second)
 
 	done := make(chan bool)
 	reserved[0].Release()
@@ -454,7 +484,7 @@ func startCluster(t *testing.T, db database.Database, size int, exclusiveAssign 
 			reserved[4*i].Release()
 			reserved[4*i+1].Release()
 			reserved[4*i+2].Release()
-			server := CreateServer(db, node.APIPort, false, "", "", node, clusterConfig, etcdDataPath+"/etcd"+strconv.Itoa(i), constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, exclusiveAssign, false, false, -1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second)
+			server := CreateServer(db, node.APIPort, false, "", "", node, clusterConfig, true, etcdDataPath+"/etcd"+strconv.Itoa(i), constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, exclusiveAssign, false, false, -1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second)
 			done := make(chan struct{})
 			s := ServerInfo{ServerID: serverID, ServerPrvKey: serverPrvKey, Server: server, Node: node, Done: done}
 			reserved[4*i+3].Release()

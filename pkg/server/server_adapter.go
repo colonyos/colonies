@@ -178,7 +178,7 @@ type processControllerAdapter struct {
 		AreColonyAssignmentsPaused(colonyName string) (bool, error)
 		GetEventHandler() backends.RealtimeEventHandler
 		IsLeader() bool
-		GetEtcdServer() *cluster.EtcdServer
+		GetCoordinator() cluster.Coordinator
 	}
 }
 
@@ -249,17 +249,17 @@ func (c *processControllerAdapter) IsLeader() bool {
 	return c.controller.IsLeader()
 }
 
-func (c *processControllerAdapter) GetEtcdServer() process.EtcdServer {
-	etcdServer := c.controller.GetEtcdServer()
-	return &etcdServerAdapter{etcdServer: etcdServer}
+func (c *processControllerAdapter) GetCoordinator() process.Coordinator {
+	coordinator := c.controller.GetCoordinator()
+	return &coordinatorAdapter{coordinator: coordinator}
 }
 
-type etcdServerAdapter struct {
-	etcdServer *cluster.EtcdServer
+type coordinatorAdapter struct {
+	coordinator cluster.Coordinator
 }
 
-func (e *etcdServerAdapter) CurrentCluster() process.Cluster {
-	clusterConfig := e.etcdServer.CurrentCluster()
+func (a *coordinatorAdapter) CurrentCluster() process.Cluster {
+	clusterConfig := a.coordinator.CurrentCluster()
 	return &clusterAdapter{cluster: &clusterConfig}
 }
 
@@ -466,21 +466,21 @@ func (s *ServerAdapter) ProcessgraphServer() processgraph.Server {
 // Server handler controller adapter
 type serverControllerAdapter struct {
 	controller interface {
-		GetEtcdServer() *cluster.EtcdServer
+		GetCoordinator() cluster.Coordinator
 	}
 }
 
-func (c *serverControllerAdapter) GetEtcdServer() serverhandlers.EtcdServer {
-	etcdServer := c.controller.GetEtcdServer()
-	return &serverEtcdServerAdapter{etcdServer: etcdServer}
+func (c *serverControllerAdapter) GetCoordinator() serverhandlers.Coordinator {
+	coordinator := c.controller.GetCoordinator()
+	return &serverCoordinatorAdapter{coordinator: coordinator}
 }
 
-type serverEtcdServerAdapter struct {
-	etcdServer *cluster.EtcdServer
+type serverCoordinatorAdapter struct {
+	coordinator cluster.Coordinator
 }
 
-func (e *serverEtcdServerAdapter) CurrentCluster() cluster.Config {
-	return e.etcdServer.CurrentCluster()
+func (a *serverCoordinatorAdapter) CurrentCluster() cluster.Config {
+	return a.coordinator.CurrentCluster()
 }
 
 func (s *ServerAdapter) ServerController() serverhandlers.Controller {

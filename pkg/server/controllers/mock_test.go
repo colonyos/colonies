@@ -625,7 +625,7 @@ func newTestColoniesController(t *testing.T, db database.Database, name string) 
 	// CreateColoniesController binds the etcd and relay ports; the API port is
 	// never bound by a bare controller
 	utils.ReleasePorts(reserved)
-	return CreateColoniesController(db, node, clusterConfig, dataPath, constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, -1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second)
+	return CreateColoniesController(db, node, clusterConfig, true, dataPath, constants.GENERATOR_TRIGGER_PERIOD, constants.CRON_TRIGGER_PERIOD, false, -1, 500, time.Duration(constants.DEFAULT_STALE_EXECUTOR_DURATION)*time.Second)
 }
 
 func createFakeColoniesController(t *testing.T) (*ColoniesController, *DatabaseMock) {

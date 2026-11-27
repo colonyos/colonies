@@ -357,7 +357,7 @@ func (m *MockController) IsLeader() bool {
 	return m.isLeader
 }
 
-func (m *MockController) GetEtcdServer() EtcdServer {
+func (m *MockController) GetCoordinator() Coordinator {
 	return nil
 }
 

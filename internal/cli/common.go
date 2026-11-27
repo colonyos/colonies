@@ -262,17 +262,6 @@ func parseEnv() {
 	DBUser = os.Getenv("COLONIES_DB_USER")
 	DBPassword = os.Getenv("COLONIES_DB_PASSWORD")
 
-	AllowExecutorReregisterStr := os.Getenv("COLONIES_ALLOW_EXECUTOR_REREGISTER")
-	if AllowExecutorReregisterStr != "" {
-		AllowExecutorReregister, err = strconv.ParseBool(AllowExecutorReregisterStr)
-		if err != nil {
-			log.Error("Failed to parse COLONIES_ALLOW_EXECUTOR_REREGISTER")
-		}
-		CheckError(err)
-	} else {
-		AllowExecutorReregister = false
-	}
-
 	StaleExecutorDurationEnvStr := os.Getenv("COLONIES_STALE_EXECUTOR_DURATION")
 	if StaleExecutorDurationEnvStr != "" {
 		StaleExecutorDuration, err = strconv.Atoi(StaleExecutorDurationEnvStr)

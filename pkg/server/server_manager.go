@@ -58,6 +58,7 @@ type ServerManager struct {
 	db              database.Database
 	thisNode        cluster.Node
 	clusterConfig   cluster.Config
+	clusterEnabled  bool
 	etcdDataPath    string
 	generatorPeriod int
 	cronPeriod      int
@@ -85,6 +86,7 @@ type SharedResources struct {
 	DB                    database.Database
 	ThisNode              cluster.Node
 	ClusterConfig         cluster.Config
+	ClusterEnabled        bool
 	EtcdDataPath          string
 	GeneratorPeriod       int
 	CronPeriod            int
@@ -98,6 +100,7 @@ func NewServerManager(
 	db database.Database,
 	thisNode cluster.Node,
 	clusterConfig cluster.Config,
+	clusterEnabled bool,
 	etcdDataPath string,
 	generatorPeriod int,
 	cronPeriod int,
@@ -108,6 +111,7 @@ func NewServerManager(
 		db:              db,
 		thisNode:        thisNode,
 		clusterConfig:   clusterConfig,
+		clusterEnabled:  clusterEnabled,
 		etcdDataPath:    etcdDataPath,
 		generatorPeriod: generatorPeriod,
 		cronPeriod:      cronPeriod,
@@ -179,6 +183,7 @@ func (sm *ServerManager) StartAll() error {
 		DB:                    sm.db,
 		ThisNode:              sm.thisNode,
 		ClusterConfig:         sm.clusterConfig,
+		ClusterEnabled:        sm.clusterEnabled,
 		EtcdDataPath:          sm.etcdDataPath,
 		GeneratorPeriod:       sm.generatorPeriod,
 		CronPeriod:            sm.cronPeriod,

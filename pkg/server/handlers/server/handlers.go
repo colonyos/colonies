@@ -15,10 +15,10 @@ import (
 )
 
 type Controller interface {
-	GetEtcdServer() EtcdServer
+	GetCoordinator() Coordinator
 }
 
-type EtcdServer interface {
+type Coordinator interface {
 	CurrentCluster() cluster.Config
 }
 
@@ -177,7 +177,7 @@ func (h *Handlers) HandleGetCluster(c backends.Context, recoveredID string, payl
 		return
 	}
 
-	cluster := h.server.Controller().GetEtcdServer().CurrentCluster()
+	cluster := h.server.Controller().GetCoordinator().CurrentCluster()
 	jsonString, err = cluster.ToJSON()
 	if h.server.HandleHTTPError(c, err, http.StatusInternalServerError) {
 		return

@@ -182,7 +182,8 @@ then run the tests:
 ```bash
 export TZ=Europe/Stockholm
 make test              # Run all tests
-make github_test       # Run tests for CI (no color output)
+make test-single-node  # Server tests with clustering disabled
+make github_test       # Run tests for CI
 ```
 
 Test packages use per-process databases and dynamic ports, so they run in

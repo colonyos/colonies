@@ -451,7 +451,7 @@ func (m *MockProcessController) IsLeader() bool {
 	return true
 }
 
-func (m *MockProcessController) GetEtcdServer() process.EtcdServer {
+func (m *MockProcessController) GetCoordinator() process.Coordinator {
 	return nil
 }
 

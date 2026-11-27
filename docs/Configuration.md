@@ -49,6 +49,15 @@ export COLONIES_CRON_CHECKER_PERIOD="1000"
 export COLONIES_GENERATOR_CHECKER_PERIOD="1000"
 ```
 
+### Clustering 
+By default the Colonies server runs an embedded Etcd instance for leader election and coordination between server replicas, see [High-Availability Deployment](HADeployment.md). Single-node deployments can disable clustering, in which case no Etcd or relay ports are opened and the local server is always the leader. The `--cluster=false` flag takes precedence over the variable below. Clustering must not be disabled when several Colonies servers share the same database, and `--initial-cluster` cannot be combined with clustering disabled.
+
+Note: With clustering disabled, paused colony assignments (`colonies colony pause`) are kept in memory only and are lost when the server restarts; the colony resumes assignments after a restart. With clustering enabled the pause state is stored in Etcd and survives a restart as long as the Etcd data directory is kept.
+
+```console
+export COLONIES_CLUSTER="false"
+```
+
 ### Exclusive assign 
 When exclusive assignment is enabled, all assign requests are handled by the elected leader server in the Colonies cluster. This guarantees that a process is assigned to exactly one executor. However, this approach may result in reduced performance as assign requests cannot be evenly distributed across all Colonies server replicas for load balancing purposes."
 

@@ -60,7 +60,7 @@ type Leader struct {
 	APIPort int
 }
 
-type EtcdServer interface {
+type Coordinator interface {
 	CurrentCluster() Cluster
 }
 
@@ -81,7 +81,7 @@ type Controller interface {
 	AreColonyAssignmentsPaused(colonyName string) (bool, error)
 	GetEventHandler() *EventHandler
 	IsLeader() bool
-	GetEtcdServer() EtcdServer
+	GetCoordinator() Coordinator
 }
 
 type AssignResult struct {
@@ -280,7 +280,7 @@ func (h *Handlers) HandleAssignProcess(c backends.Context, recoveredID string, p
 	var err error
 	if h.server.ExclusiveAssign() && !h.server.ProcessController().IsLeader() {
 		// Find out who is the leader
-		leader := h.server.ProcessController().GetEtcdServer().CurrentCluster().GetLeader()
+		leader := h.server.ProcessController().GetCoordinator().CurrentCluster().GetLeader()
 		leaderHost := leader.Host
 		leaderPort := leader.APIPort
 		insecure := !h.server.TLS()
